@@ -161,7 +161,8 @@ const CustomGoogleButton = ({ onSuccess, darkMode }) => {
 function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [books, setBooks] = useState([]);
-  const [featuredBooks, setFeaturedBooks] = useState([]); // --- NUEVO: Libros destacados ---
+  const [featuredBooks, setFeaturedBooks] = useState([]);
+  const [recentlyUpdated, setRecentlyUpdated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -170,27 +171,55 @@ function App() {
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
+  const theme = {
+    bg: darkMode ? '#0f1115' : '#fcfaf7', 
+    card: darkMode ? '#1a1d23' : '#ffffff',
+    accent: '#3498db',
+    textMain: darkMode ? '#e0e0e0' : '#2c3e50',
+    textMuted: darkMode ? '#a0a0a0' : '#7f8c8d',
+    border: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+    navBg: darkMode ? 'rgba(15, 17, 21, 0.8)' : 'rgba(252, 250, 247, 0.8)'
+  };
+
+  // --- SOLUCIÓN: Sincronizar el color del body con el tema ---
+  useEffect(() => {
+    document.body.style.backgroundColor = theme.bg;
+  }, [theme.bg]);
+
   const refreshBooks = useCallback(() => {
     setLoading(true);
-    // 1. Cargar todos los libros
-    fetch('http://127.0.0.1:5001/api/books')
-      .then(response => response.ok ? response.json() : [])
-      .then(data => {
-        setBooks(Array.isArray(data) ? data : []); 
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        setLoading(false);
-      });
+    const fetchAllBooks = fetch('http://127.0.0.1:5001/api/books')
+      .then(res => res.ok ? res.json() : [])
+      .catch(() => []);
 
-    // 2. Cargar los libros destacados (rotación 6h)
-    fetch('http://127.0.0.1:5001/api/books/featured')
-      .then(response => response.ok ? response.json() : [])
-      .then(data => {
-        setFeaturedBooks(Array.isArray(data) ? data : []);
-      })
-      .catch(err => console.error("Error cargando destacados:", err));
+    const fetchRecent = fetch('http://127.0.0.1:5001/api/books/recently-updated')
+      .then(res => res.ok ? res.json() : [])
+      .catch(() => []);
+
+    const now = new Date().getTime();
+    const lastFetch = localStorage.getItem('featuredLastFetch');
+    const savedFeatured = localStorage.getItem('featuredBooks');
+
+    let fetchFeatured;
+    if (savedFeatured && lastFetch && (now - lastFetch < 10 * 1000)) {
+      fetchFeatured = Promise.resolve(JSON.parse(savedFeatured));
+    } else {
+      fetchFeatured = fetch('http://127.0.0.1:5001/api/books/featured-random')
+        .then(res => res.ok ? res.json() : [])
+        .then(data => {
+          localStorage.setItem('featuredBooks', JSON.stringify(data));
+          localStorage.setItem('featuredLastFetch', now.toString());
+          return data;
+        })
+        .catch(() => []);
+    }
+
+    Promise.all([fetchAllBooks, fetchFeatured, fetchRecent]).then(([all, feat, recent]) => {
+      setBooks(Array.isArray(all) ? all : []);
+      setFeaturedBooks(Array.isArray(feat) ? feat : []);
+      setRecentlyUpdated(Array.isArray(recent) ? recent : []);
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {
@@ -204,24 +233,16 @@ function App() {
 
   const handleSaveProfile = async (newNick, newPhoto) => {
     const updatedUser = { ...user, name: newNick, picture: newPhoto };
-    
     try {
       await fetch('http://127.0.0.1:5001/api/update-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: user.email,
-          nickname: newNick,
-          picture: newPhoto
-        }),
+        body: JSON.stringify({ email: user.email, nickname: newNick, picture: newPhoto }),
       });
-
       setUser(updatedUser);
       localStorage.setItem('userSession', JSON.stringify(updatedUser));
       setShowOnboarding(false);
-      
     } catch (error) {
-      console.error("Error al guardar perfil:", error);
       setShowOnboarding(false);
     }
   };
@@ -231,16 +252,6 @@ function App() {
     localStorage.removeItem('userSession');
   };
 
-  const theme = {
-    bg: darkMode ? '#0f1115' : '#fcfaf7', 
-    card: darkMode ? '#1a1d23' : '#ffffff',
-    accent: '#3498db',
-    textMain: darkMode ? '#e0e0e0' : '#2c3e50',
-    textMuted: darkMode ? '#a0a0a0' : '#7f8c8d',
-    border: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-    navBg: darkMode ? 'rgba(15, 17, 21, 0.8)' : 'rgba(252, 250, 247, 0.8)'
-  };
-
   return (
     <GoogleOAuthProvider clientId="750793668642-7apu45i7te8b8gibnrelnhjgqj7vg512.apps.googleusercontent.com">
       
@@ -248,53 +259,32 @@ function App() {
         <OnboardingModal user={user} onSave={handleSaveProfile} darkMode={darkMode} />
       )}
 
-      <div style={{
-        backgroundColor: theme.bg,
-        color: theme.textMain,
-        minHeight: '100vh',
-        width: '100%',
-        transition: 'all 0.4s ease',
-        margin: 0,
-        padding: 0,
-        fontFamily: "'Inter', 'Segoe UI', sans-serif",
-      }}>
+      <div style={{ backgroundColor: theme.bg, color: theme.textMain, minHeight: '100vh', width: '100%', transition: 'all 0.4s ease', fontFamily: "'Inter', sans-serif" }}>
         
-        <nav style={{ 
-          position: 'sticky', top: 0, zIndex: 1000,
-          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-          backgroundColor: theme.navBg,
-          borderBottom: `1px solid ${theme.border}`,
-          padding: '15px 0'
-        }}>
+        <nav style={{ position: 'sticky', top: 0, zIndex: 1000, backdropFilter: 'blur(12px)', backgroundColor: theme.navBg, borderBottom: `1px solid ${theme.border}`, padding: '15px 0' }}>
           <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
               <Link to="/" style={{ color: theme.accent, textDecoration: 'none', fontWeight: 800, fontSize: '1.5rem', letterSpacing: '-1px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.8rem' }}>📖</span> HISPANO
               </Link>
-              <div style={{ display: 'flex', gap: '15px', marginLeft: '10px' }}>
-                <Link to="/rankings" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>🏆 Top 100</Link>
+              <div style={{ display: 'flex', gap: '15px' }}>
+                <Link to="/rankings" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>🏆 Rankings</Link>
                 {user && (
                   <>
                     <Link to="/library" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>📚 Mi Biblioteca</Link>
-                    <Link to="/publish" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 500, opacity: 0.8 }}>Publicar</Link>
                     <Link to="/dashboard" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 500, opacity: 0.8 }}>Mi Studio</Link>
                   </>
                 )}
               </div>
             </div>
-
             <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-              {!user ? (
-                <CustomGoogleButton onSuccess={handleLoginSuccess} darkMode={darkMode} />
-              ) : (
+              {!user ? <CustomGoogleButton onSuccess={handleLoginSuccess} darkMode={darkMode} /> : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderRight: `1px solid ${theme.border}`, paddingRight: '15px' }}>
                   <img src={user.picture} alt="profile" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
                   <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>Salir</button>
                 </div>
               )}
-              <button onClick={() => setDarkMode(!darkMode)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center' }}>
-                {darkMode ? '☀️' : '🌙'}
-              </button>
+              <button onClick={() => setDarkMode(!darkMode)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>{darkMode ? '☀️' : '🌙'}</button>
             </div>
           </div>
         </nav>
@@ -308,53 +298,61 @@ function App() {
                   <p style={{ color: theme.textMuted, fontSize: '1.1rem' }}>Libros escritos por la comunidad para el mundo.</p>
                 </header>
 
-                {/* --- SECCIÓN NUEVA: LIBROS DESTACADOS --- */}
                 {featuredBooks.length > 0 && (
                   <section style={{ marginBottom: '60px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                      <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Destacados de la Comunidad</h2>
-                      <span style={{ fontSize: '0.7rem', backgroundColor: theme.accent, color: 'white', padding: '2px 8px', borderRadius: '20px', fontWeight: 800 }}>ROTACIÓN CADA 6H</span>
+                      <h2 style={{ fontSize: '1.1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Destacados</h2>
+                      <span style={{ fontSize: '0.65rem', backgroundColor: '#f1c40f', color: '#000', padding: '2px 8px', borderRadius: '4px', fontWeight: 900 }}>6 HORAS</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px' }}>
                       {featuredBooks.map(book => (
                         <Link key={`feat-${book.id}`} to={`/book/${book.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                          <div className="book-card-featured" style={{ backgroundColor: theme.card, padding: '12px', borderRadius: '12px', border: `1px solid ${theme.border}`, position: 'relative' }}>
-                             <div style={{ width: '100%', aspectRatio: '2/3', borderRadius: '8px', overflow: 'hidden', marginBottom: '10px' }}>
-                                <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} alt={book.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.src = "https://placehold.jp/24/333333/ffffff/210x315.png?text=Sin%20Portada" }} />
-                             </div>
-                             <h3 style={{ margin: '0', fontSize: '0.95rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{book.title}</h3>
-                             <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: theme.accent }}>{book.author}</p>
+                          <div className="book-card-featured" style={{ backgroundColor: theme.card, padding: '10px', borderRadius: '12px', border: `1px solid ${theme.border}` }}>
+                            <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} alt={book.title} style={{ width: '100%', aspectRatio: '2/3', borderRadius: '8px', objectFit: 'cover' }} />
+                            <h3 style={{ margin: '10px 0 0 0', fontSize: '0.9rem', fontWeight: 700 }}>{book.title}</h3>
                           </div>
                         </Link>
                       ))}
                     </div>
-                    <hr style={{ marginTop: '50px', border: 'none', height: '1px', backgroundColor: theme.border }} />
                   </section>
                 )}
 
-                {loading ? (
-                  <div style={{ textAlign: 'center', padding: '100px' }}>
-                    <div className="spinner"></div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '40px', paddingBottom: '80px' }}>
-                    {books.map(book => (
-                      <Link key={book.id} to={`/book/${book.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                        <div className="book-card">
-                          <div style={{ width: '100%', aspectRatio: '2/3', backgroundColor: '#222', borderRadius: '4px', overflow: 'hidden', position: 'relative', boxShadow: darkMode ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 25px rgba(0,0,0,0.1)' }}>
-                            <div style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: 'rgba(0,0,0,0.7)', padding: '4px 8px', borderRadius: '4px', color: 'white', fontSize: '0.7rem', fontWeight: 700, backdropFilter: 'blur(4px)', zIndex: 2 }}>
-                              👁️ {book.views || 0}
+                <section style={{ marginBottom: '60px' }}>
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '25px' }}>Todos los Libros</h2>
+                  {loading ? <div className="spinner"></div> : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '40px' }}>
+                      {books.map(book => (
+                        <Link key={book.id} to={`/book/${book.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                          <div className="book-card">
+                            <div style={{ width: '100%', aspectRatio: '2/3', backgroundColor: '#222', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
+                               <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} alt={book.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
-                            <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} alt={book.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.src = "https://placehold.jp/24/333333/ffffff/210x315.png?text=Sin%20Portada" }} />
+                            <h3 style={{ margin: '10px 0 4px 0', fontSize: '1.05rem', fontWeight: 700 }}>{book.title}</h3>
                           </div>
-                          <div style={{ padding: '10px 0' }}>
-                            <h3 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 700, color: theme.textMain }}>{book.title}</h3>
-                            <p style={{ margin: 0, fontSize: '0.85rem', color: theme.accent }}>{book.author}</p>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                {recentlyUpdated.length > 0 && (
+                  <section style={{ padding: '40px 0 100px 0', borderTop: `1px solid ${theme.border}` }}>
+                    <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '25px' }}>Recién Actualizados</h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '15px' }}>
+                      {recentlyUpdated.map(book => (
+                        <Link key={`recent-${book.id}`} to={`/book/${book.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                          <div className="recent-item" style={{ display: 'flex', gap: '15px', padding: '12px', backgroundColor: theme.card, borderRadius: '10px', border: `1px solid ${theme.border}`, transition: 'all 0.2s' }}>
+                            <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} style={{ width: '50px', height: '70px', borderRadius: '4px', objectFit: 'cover' }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>{book.title}</h4>
+                              <p style={{ margin: '2px 0', fontSize: '0.8rem', opacity: 0.6 }}>Por {book.author}</p>
+                              <span style={{ fontSize: '0.7rem', color: theme.accent, fontWeight: 700 }}>Capítulo nuevo</span>
+                            </div>
                           </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
                 )}
               </main>
             } />
@@ -372,24 +370,13 @@ function App() {
       </div>
 
       <style>{`
-        /* --- ESTO ELIMINA LOS BORDES BLANCOS DE LAS ESQUINAS --- */
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-
-        body {
-          margin: 0;
-          padding: 0;
-          background-color: ${theme.bg}; /* Evita el flash blanco al cargar */
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { background-color: ${theme.bg}; min-height: 100%; } /* Evita la línea blanca al final */
         .book-card { transition: all 0.3s ease; }
         .book-card:hover { transform: translateY(-8px); }
-        .book-card-featured { transition: all 0.3s ease; cursor: pointer; }
-        .book-card-featured:hover { transform: scale(1.03); box-shadow: 0 10px 20px rgba(0,0,0,0.2); border-color: ${theme.accent} !important; }
-        .spinner { width: 40px; height: 40px; border: 3px solid ${theme.border}; border-top-color: ${theme.accent}; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
+        .book-card-featured:hover { transform: scale(1.03); border-color: ${theme.accent} !important; }
+        .recent-item:hover { transform: translateX(5px); border-color: ${theme.accent} !important; }
+        .spinner { width: 40px; height: 40px; border: 3px solid ${theme.border}; border-top-color: ${theme.accent}; border-radius: 50%; animation: spin 1s linear infinite; margin: 40px auto; }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </GoogleOAuthProvider>
