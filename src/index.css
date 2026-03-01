@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* Este es el "Reset" para que no haya espacios blancos */
 * {
   margin: 0;
@@ -10,4 +11,18 @@ body, html, #root {
   height: 100%;
   /* Esto asegura que el fondo sea uniforme */
   overflow-x: hidden; 
+=======
+/* Este es el "Reset" para que no haya espacios blancos */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html, #root {
+  width: 100%;
+  height: 100%;
+  /* Esto asegura que el fondo sea uniforme */
+  overflow-x: hidden; 
+>>>>>>> c46374a71dcbdc5964d2c90a16b69342db3429d1
 }
