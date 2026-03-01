@@ -372,6 +372,19 @@ function App() {
       </div>
 
       <style>{`
+        /* --- ESTO ELIMINA LOS BORDES BLANCOS DE LAS ESQUINAS --- */
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        body {
+          margin: 0;
+          padding: 0;
+          background-color: ${theme.bg}; /* Evita el flash blanco al cargar */
+        }
+
         .book-card { transition: all 0.3s ease; }
         .book-card:hover { transform: translateY(-8px); }
         .book-card-featured { transition: all 0.3s ease; cursor: pointer; }
