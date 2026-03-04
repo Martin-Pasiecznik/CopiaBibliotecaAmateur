@@ -4,15 +4,13 @@ import { useNavigate } from 'react-router-dom';
 const PublishBook = ({ user, darkMode, refreshBooks }) => { 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [tags, setTags] = useState(''); // <-- Nuevo estado para Tags
+  const [tags, setTags] = useState(''); 
   const [cover, setCover] = useState(null); 
   const navigate = useNavigate();
 
-  // Lista de géneros para selección rápida
   const suggestedGenres = ["Terror", "Romance", "Fantasía", "Ciencia Ficción", "Misterio", "Aventura"];
 
   const handleGenreClick = (genre) => {
-    // Si el tag ya está, no lo agrega. Si no, lo concatena con coma
     if (!tags.includes(genre)) {
       setTags(tags === "" ? genre : `${tags}, ${genre}`);
     }
@@ -44,7 +42,7 @@ const PublishBook = ({ user, darkMode, refreshBooks }) => {
     formData.append('author', user.name);
     formData.append('description', description);
     formData.append('author_email', user.email);
-    formData.append('tags', tags); // <-- Enviamos los tags al Backend
+    formData.append('tags', tags); 
     
     if (cover) {
       formData.append('cover', cover);
@@ -102,7 +100,6 @@ const PublishBook = ({ user, darkMode, refreshBooks }) => {
           required 
         />
 
-        {/* --- SECCIÓN DE TAGS --- */}
         <label>Géneros / Etiquetas (separados por coma)</label>
         <input 
           placeholder="Ej: Terror, Suspenso, Cyberpunk" 
@@ -117,22 +114,39 @@ const PublishBook = ({ user, darkMode, refreshBooks }) => {
               type="button"
               onClick={() => handleGenreClick(genre)}
               style={{
-                padding: '5px 10px',
-                borderRadius: '15px',
-                border: '1px solid #3498db',
-                backgroundColor: 'transparent',
-                color: '#3498db',
-                fontSize: '0.75rem',
-                cursor: 'pointer'
+                padding: '5px 10px', borderRadius: '15px', border: '1px solid #3498db',
+                backgroundColor: 'transparent', color: '#3498db', fontSize: '0.75rem', cursor: 'pointer'
               }}
             >
               + {genre}
             </button>
           ))}
         </div>
-        {/* --- FIN SECCIÓN DE TAGS --- */}
 
-        <label>Portada del Libro (Opcional - Máx. 2MB)</label>
+  {/* --- VISTA PREVIA DE PORTADA --- */}
+  <label style={{ display: 'block', marginBottom: '10px' }}>Vista previa de la portada</label>
+  <div style={{
+   width: '160px',
+    aspectRatio: '2/3',
+    backgroundColor: darkMode ? '#222' : '#f0f0f0',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: `2px solid ${darkMode ? '#444' : '#ccc'}`, 
+   margin: '0 auto 20px auto',
+    overflow: 'hidden',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.2)' 
+  }}>
+    <img 
+      //  usa el cover local; si no, usa el DEFAULT del servidor
+     src={cover ? URL.createObjectURL(cover) : "http://127.0.0.1:5001/static/covers/default_cover.jpeg"} 
+     alt="Preview" 
+     style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+    />
+  </div>
+
+        <label>Subir Portada (Opcional - Máx. 2MB)</label>
         <input 
           type="file" 
           accept="image/*" 

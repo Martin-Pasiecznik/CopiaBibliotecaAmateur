@@ -36,6 +36,23 @@ const BookDetail = ({ user, darkMode }) => {
     readText: darkMode ? '#82e0aa' : '#155724'      // Texto verde según modo
   };
 
+  // --- NUEVO: ESTILO PARA PORTADA POR DEFECTO ---
+  const defaultCoverStyle = {
+    width: '280px',
+    aspectRatio: '2/3',
+    borderRadius: '8px',
+    backgroundColor: darkMode ? '#222' : '#eee',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: darkMode ? '#555' : '#aaa',
+    fontWeight: 800,
+    fontSize: '1.2rem',
+    border: `1px solid ${theme.border}`,
+    textAlign: 'center',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+  };
+
   const userReview = comments.find(c => c.user_email === user?.email);
 
   useEffect(() => {
@@ -61,23 +78,23 @@ const BookDetail = ({ user, darkMode }) => {
           if (bookInLib) setLibraryStatus(bookInLib.status);
         });
       
-// --- ACTUALIZADO: CARGAR PROGRESO PERSISTENTE ---
-if (user) {
-  fetch(`http://127.0.0.1:5001/api/progress/${user.email}/${id}`)
-    .then(r => {
-      if (!r.ok) throw new Error('Error en la red');
-      return r.json();
-    })
-    .then(data => {
-      if (data) {
-        setProgress({ 
-          lastChapterIndex: data.last_chapter_id, // Asegúrate que el front use este ID
-          readChapters: data.read_chapters || [] 
-        });
+      // --- ACTUALIZADO: CARGAR PROGRESO PERSISTENTE ---
+      if (user) {
+        fetch(`http://127.0.0.1:5001/api/progress/${user.email}/${id}`)
+          .then(r => {
+            if (!r.ok) throw new Error('Error en la red');
+            return r.json();
+          })
+          .then(data => {
+            if (data) {
+              setProgress({ 
+                lastChapterIndex: data.last_chapter_id, 
+                readChapters: data.read_chapters || [] 
+              });
+            }
+          })
+          .catch(err => console.error("Error cargando progreso:", err)); 
       }
-    })
-    .catch(err => console.error("Error cargando progreso:", err)); // --- NUEVO: Captura el error de CORS ---
-}
     }
   }, [id, user]);
 
@@ -111,7 +128,6 @@ if (user) {
     });
   };
 
-  // --- FUNCIÓN ACTUALIZAR BIBLIOTECA ---
   const updateLibrary = (status) => {
     if (!user) return setErrorMsg("Debes iniciar sesión para guardar en tu biblioteca.");
     setIsUpdatingLib(true);
@@ -172,7 +188,18 @@ if (user) {
     <div style={{ padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', color: theme.textMain }}>
       
       <div style={{ display: 'flex', gap: '50px', marginBottom: '60px', flexWrap: 'wrap' }}>
-        <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} style={{ width: '280px', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }} alt="Portada" />
+        
+        {/* --- VALIDACIÓN DE PORTADA --- */}
+        {book.author_note && book.author_note !== 'null' ? (
+          <img 
+            src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} 
+            style={{ width: '280px', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)', objectFit: 'cover' }} 
+            alt="Portada" 
+          />
+        ) : (
+          <div style={defaultCoverStyle}>SIN IMAGEN</div>
+        )}
+
         <div style={{ flex: 1, minWidth: '300px' }}>
           <h1 style={{ fontSize: '3rem', margin: '0 0 10px 0' }}>{book.title}</h1>
           <p style={{ color: theme.accent, fontSize: '1.2rem', marginBottom: '20px' }}>{book.author}</p>
@@ -219,7 +246,6 @@ if (user) {
           <p style={{ lineHeight: '1.8', opacity: 0.9, marginBottom: '30px' }}>{book.description}</p>
           
           {chapters.length > 0 && (
-            // --- ACTUALIZADO: Botón redirige al último capítulo ---
             <Link to={`/reader/${book.id}/${progress.lastChapterIndex !== -1 ? progress.lastChapterIndex : 0}`} style={{ background: theme.accent, color: 'white', padding: '12px 35px', borderRadius: '30px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block' }}>
               {progress.lastChapterIndex !== -1 ? "CONTINUAR LEYENDO" : "COMENZAR A LEER"}
             </Link>
@@ -231,32 +257,27 @@ if (user) {
         <h3 style={{ fontSize: '1.5rem', borderBottom: `2px solid ${theme.border}`, paddingBottom: '10px', marginBottom: '20px' }}>Índice de capítulos</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
           {chapters.map((ch, index) => {
-            // --- NUEVO: LÓGICA DE ESTILOS POR PROGRESO ---
             const isRead = progress.readChapters.includes(ch.id);
             const isLast = progress.lastChapterIndex === index;
 
             return (
               <Link key={ch.id} to={`/reader/${book.id}/${index}`} style={{ 
                 padding: '15px', 
-                // --- ACTUALIZADO: Fondo verde si está leído ---
                 background: isRead ? theme.readColor : theme.card, 
-                // --- ACTUALIZADO: Borde destacado si es el último ---
                 border: isLast ? `2px solid ${theme.accent}` : `1px solid ${theme.border}`,
                 borderRadius: '8px', 
                 textDecoration: 'none', 
-                // --- ACTUALIZADO: Texto verde si está leído ---
                 color: isRead ? theme.readText : theme.textMain, 
                 display: 'flex', 
                 justifyContent: 'space-between', 
                 transition: '0.2s',
-                position: 'relative' // Para posicionar la etiqueta "Donde quedaste"
+                position: 'relative'
               }}
               onMouseOver={(e) => e.currentTarget.style.borderColor = theme.accent}
               onMouseOut={(e) => e.currentTarget.style.borderColor = isLast ? theme.accent : theme.border}
               >
                 <span style={{ fontWeight: isLast ? 'bold' : 'normal' }}>
                   {index + 1}. {ch.title}
-                  {/* --- NUEVO: Etiqueta Donde quedaste --- */}
                   {isLast && <span style={{color: theme.accent, fontSize: '0.7rem', display: 'block'}}>📍 Donde quedaste</span>}
                 </span>
                 <span style={{ fontSize: '0.8rem', color: isRead ? theme.readText : theme.textMuted }}>
@@ -337,7 +358,6 @@ if (user) {
         </div>
       </div>
 
-      {/* NOTIFICACIÓN FLOTANTE (Toast) */}
       {notif && (
         <div style={{ 
           position: 'fixed', bottom: '30px', left: '30px', backgroundColor: '#2c3e50', color: 'white',

@@ -181,7 +181,6 @@ function App() {
     navBg: darkMode ? 'rgba(15, 17, 21, 0.8)' : 'rgba(252, 250, 247, 0.8)'
   };
 
-  // --- SOLUCIÓN: Sincronizar el color del body con el tema ---
   useEffect(() => {
     document.body.style.backgroundColor = theme.bg;
   }, [theme.bg]);
@@ -192,9 +191,9 @@ function App() {
       .then(res => res.ok ? res.json() : [])
       .catch(() => []);
 
-    const fetchRecent = fetch('http://127.0.0.1:5001/api/books/recently-updated')
-      .then(res => res.ok ? res.json() : [])
-      .catch(() => []);
+const fetchRecent = fetch('http://127.0.0.1:5001/api/books/recently-updated')
+  .then(res => res.ok ? res.json() : [])
+  .catch(() => []); // Esto evita que el 404 bloquee el resto de la app
 
     const now = new Date().getTime();
     const lastFetch = localStorage.getItem('featuredLastFetch');
@@ -250,6 +249,15 @@ function App() {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('userSession');
+  };
+
+  // --- ESTILO PORTADA PREDETERMINADA (REUTILIZABLE) ---
+  const defaultCoverStyle = {
+    width: '100%', aspectRatio: '2/3', borderRadius: '8px', 
+    backgroundColor: darkMode ? '#222' : '#eee',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: darkMode ? '#555' : '#aaa', fontWeight: 800, fontSize: '0.8rem',
+    border: `1px solid ${theme.border}`, textAlign: 'center'
   };
 
   return (
@@ -308,7 +316,11 @@ function App() {
                       {featuredBooks.map(book => (
                         <Link key={`feat-${book.id}`} to={`/book/${book.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                           <div className="book-card-featured" style={{ backgroundColor: theme.card, padding: '10px', borderRadius: '12px', border: `1px solid ${theme.border}` }}>
-                            <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} alt={book.title} style={{ width: '100%', aspectRatio: '2/3', borderRadius: '8px', objectFit: 'cover' }} />
+                            {book.author_note && book.author_note !== 'null' ? (
+                                <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} alt={book.title} style={{ width: '100%', aspectRatio: '2/3', borderRadius: '8px', objectFit: 'cover' }} />
+                            ) : (
+                                <div style={defaultCoverStyle}>SIN IMAGEN</div>
+                            )}
                             <h3 style={{ margin: '10px 0 0 0', fontSize: '0.9rem', fontWeight: 700 }}>{book.title}</h3>
                           </div>
                         </Link>
@@ -324,8 +336,12 @@ function App() {
                       {books.map(book => (
                         <Link key={book.id} to={`/book/${book.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                           <div className="book-card">
-                            <div style={{ width: '100%', aspectRatio: '2/3', backgroundColor: '#222', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
-                               <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} alt={book.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ width: '100%', aspectRatio: '2/3', backgroundColor: '#222', borderRadius: '4px', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                               {book.author_note && book.author_note !== 'null' ? (
+                                   <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} alt={book.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                               ) : (
+                                   <div style={{ ...defaultCoverStyle, border: 'none' }}>SIN IMAGEN</div>
+                               )}
                             </div>
                             <h3 style={{ margin: '10px 0 4px 0', fontSize: '1.05rem', fontWeight: 700 }}>{book.title}</h3>
                           </div>
@@ -342,7 +358,11 @@ function App() {
                       {recentlyUpdated.map(book => (
                         <Link key={`recent-${book.id}`} to={`/book/${book.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                           <div className="recent-item" style={{ display: 'flex', gap: '15px', padding: '12px', backgroundColor: theme.card, borderRadius: '10px', border: `1px solid ${theme.border}`, transition: 'all 0.2s' }}>
-                            <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} style={{ width: '50px', height: '70px', borderRadius: '4px', objectFit: 'cover' }} />
+                            {book.author_note && book.author_note !== 'null' ? (
+                                <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} style={{ width: '50px', height: '70px', borderRadius: '4px', objectFit: 'cover' }} />
+                            ) : (
+                                <div style={{ width: '50px', height: '70px', borderRadius: '4px', backgroundColor: darkMode ? '#333' : '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5rem', fontWeight: 800, color: darkMode ? '#555' : '#aaa', textAlign: 'center' }}>SIN<br/>IMG</div>
+                            )}
                             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                               <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>{book.title}</h4>
                               <p style={{ margin: '2px 0', fontSize: '0.8rem', opacity: 0.6 }}>Por {book.author}</p>
@@ -371,7 +391,7 @@ function App() {
 
       <style>{`
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { background-color: ${theme.bg}; min-height: 100%; } /* Evita la línea blanca al final */
+        html, body { background-color: ${theme.bg}; min-height: 100%; }
         .book-card { transition: all 0.3s ease; }
         .book-card:hover { transform: translateY(-8px); }
         .book-card-featured:hover { transform: scale(1.03); border-color: ${theme.accent} !important; }
