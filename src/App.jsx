@@ -13,6 +13,7 @@ import Rankings from './pages/Rankings'
 import AuthorBookDetails from './pages/AuthorBookDetails'
 import EditChapter from './pages/EditChapter';
 import MyLibrary from './pages/MyLibrary'; 
+import AdvancedSearch from './pages/AdvancedSearch'
 
 // --- COMPONENTE MODAL DE CONFIGURACIÓN ---
 const OnboardingModal = ({ user, onSave, darkMode }) => {
@@ -277,6 +278,7 @@ const fetchRecent = fetch('http://127.0.0.1:5001/api/books/recently-updated')
               </Link>
               <div style={{ display: 'flex', gap: '15px' }}>
                 <Link to="/rankings" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>🏆 Rankings</Link>
+                <Link to="/search" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>🔍 Explorar</Link>
                 {user && (
                   <>
                     <Link to="/library" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>📚 Mi Biblioteca</Link>
@@ -294,7 +296,7 @@ const fetchRecent = fetch('http://127.0.0.1:5001/api/books/recently-updated')
               )}
               <button onClick={() => setDarkMode(!darkMode)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>{darkMode ? '☀️' : '🌙'}</button>
             </div>
-          </div>
+          </div>    
         </nav>
 
         <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px' }}>
@@ -385,6 +387,7 @@ const fetchRecent = fetch('http://127.0.0.1:5001/api/books/recently-updated')
             <Route path="/add-chapter/:id" element={<AddChapter user={user} darkMode={darkMode} />} />
             <Route path="/dashboard/book/:id" element={<AuthorBookDetails user={user} darkMode={darkMode} />} />
             <Route path="/edit-chapter/:chapterId" element={<EditChapter darkMode={darkMode} />} />
+            <Route path="/search" element={<AdvancedSearch darkMode={darkMode} />} />
           </Routes>
         </div>
       </div>
