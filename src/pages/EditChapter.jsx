@@ -19,22 +19,26 @@ const EditChapter = ({ darkMode }) => {
     input: darkMode ? '#2d2d2d' : '#f9f9f9',
   };
 
-  useEffect(() => {
-    // Necesitamos obtener los datos del capítulo. 
-    // Nota: Si no tienes una ruta GET para un solo capítulo, 
-    // puedes usar la de libros/id/chapters y filtrar, pero aquí asumimos una estándar:
-    fetch(`http://127.0.0.1:5001/api/books/0/chapters`) // Ajusta según tu API
-      .then(res => res.json())
-      .then(data => {
-        const current = data.find(c => c.id === parseInt(chapterId));
-        if (current) {
-          setTitle(current.title);
-          setContent(current.content);
-        }
-        setLoading(false);
-      })
-      .catch(err => console.error("Error cargando capítulo:", err));
-  }, [chapterId]);
+useEffect(() => {
+  // 1. Necesitamos el capítulo específico. 
+  // Usamos el ID del capítulo que viene en la URL
+  fetch(`http://127.0.0.1:5001/api/chapters/${chapterId}`) 
+    .then(res => {
+      if (!res.ok) throw new Error("No se encontró el capítulo");
+      return res.json();
+    })
+    .then(data => {
+      // 'data' ya debería ser el objeto del capítulo
+      setTitle(data.title);
+      setContent(data.content);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error("Error cargando capítulo:", err);
+      alert("No se pudo cargar el capítulo.");
+      setLoading(false);
+    });
+}, [chapterId]);
 
   const handleSave = async (e) => {
     e.preventDefault();
