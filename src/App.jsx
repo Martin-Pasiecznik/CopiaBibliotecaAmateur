@@ -173,17 +173,16 @@ function App() {
   });
 
 const theme = {
-  // MODO OSCURO: Inspirado en bibliotecas de madera oscura y noche tranquila
-  // MODO CLARO: Inspirado en papel de libro antiguo y luz de mañana
-  bg: darkMode ? '#12141a' : '#f9f6f2', 
-  card: darkMode ? '#1c1f26' : '#ffffff',
-  accent: darkMode ? '#60a5fa' : '#3d7ab0', // Azul suave, menos agresivo
-  textMain: darkMode ? '#e2e8f0' : '#2c2c2c',
-  textMuted: darkMode ? '#94a3b8' : '#7d746d',
-  border: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
-  navBg: darkMode ? 'rgba(18, 20, 26, 0.85)' : 'rgba(249, 246, 242, 0.85)',
-  // Toque único: Sombras suaves y orgánicas
-  shadow: darkMode ? '0 10px 30px rgba(0,0,0,0.3)' : '0 10px 30px rgba(180,170,160,0.15)'
+  // OSCURO: Tinta profunda con acentos en oro viejo
+  // CLARO: Papel papiro suave con acentos en terracota
+  bg: darkMode ? '#0a0b10' : '#f4f0ea', 
+  card: darkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.5)', // Efecto cristal
+  accent: darkMode ? '#d4af37' : '#b85b3f', // Oro / Terracota
+  textMain: darkMode ? '#e3e1db' : '#2b2824',
+  textMuted: darkMode ? '#8a8782' : '#857f77',
+  border: darkMode ? 'rgba(212, 175, 55, 0.15)' : 'rgba(184, 91, 63, 0.15)',
+  navBg: darkMode ? 'rgba(10, 11, 16, 0.7)' : 'rgba(244, 240, 234, 0.7)',
+  shadow: darkMode ? '0 15px 35px rgba(0,0,0,0.5)' : '0 15px 35px rgba(133,127,119,0.15)'
 };
 
   useEffect(() => {
@@ -275,19 +274,25 @@ const defaultCoverStyle = {
 
       <div style={{ backgroundColor: theme.bg, color: theme.textMain, minHeight: '100vh', width: '100%', transition: 'all 0.4s ease', fontFamily: "'Inter', sans-serif" }}>
         
-        <nav style={{ position: 'sticky', top: 0, zIndex: 1000, backdropFilter: 'blur(12px)', backgroundColor: theme.navBg, borderBottom: `1px solid ${theme.border}`, padding: '15px 0' }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+       {/* NAVBAR TIPO PÍLDORA FLOTANTE */}
+        <div style={{ position: 'sticky', top: '20px', zIndex: 1000, padding: '0 20px' }}>
+          <nav style={{ 
+            maxWidth: '1000px', margin: '0 auto', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+            backgroundColor: theme.navBg, border: `1px solid ${theme.border}`, padding: '12px 25px', 
+            borderRadius: '50px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            boxShadow: theme.shadow 
+          }}>
             <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
-              <Link to="/" style={{ color: theme.accent, textDecoration: 'none', fontWeight: 800, fontSize: '1.5rem', letterSpacing: '-1px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '1.8rem' }}>📖</span> Biblioteca Amateur
+              <Link to="/" style={{ color: theme.textMain, textDecoration: 'none', fontWeight: 800, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Crimson Pro', serif" }}>
+                <span style={{ color: theme.accent }}>✦</span> HISPANO
               </Link>
-              <div style={{ display: 'flex', gap: '15px' }}>
-                <Link to="/rankings" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>🏆 Rankings</Link>
-                <Link to="/search" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>🔍 Explorar</Link>
+              <div style={{ display: 'flex', gap: '20px' }}>
+                <Link to="/rankings" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7, transition: '0.3s' }}>Rankings</Link>
+                <Link to="/search" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7, transition: '0.3s' }}>Explorar</Link>
                 {user && (
                   <>
-                    <Link to="/library" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>📚 Mi Biblioteca</Link>
-                    <Link to="/dashboard" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 500, opacity: 0.8 }}>Mi Studio</Link>
+                    <Link to="/library" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7 }}>Mi Biblioteca</Link>
+                    <Link to="/dashboard" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7 }}>Mi Studio</Link>
                   </>
                 )}
               </div>
@@ -296,35 +301,35 @@ const defaultCoverStyle = {
               {!user ? <CustomGoogleButton onSuccess={handleLoginSuccess} darkMode={darkMode} /> : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderRight: `1px solid ${theme.border}`, paddingRight: '15px' }}>
                   <img src={user.picture} alt="profile" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
-                  <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>Salir</button>
+                  <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: theme.textMuted, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>Salir</button>
                 </div>
               )}
-            <button 
-               className="mode-toggle" 
-               onClick={() => setDarkMode(!darkMode)} 
-               style={{ 
-              background: 'none', 
-              border: 'none', 
-              fontSize: '1.2rem', 
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-                     }}
-            > 
-  {darkMode ? '☀️' : '🌙'}
-</button>
+              <button className="mode-toggle" onClick={() => setDarkMode(!darkMode)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', display: 'flex' }}>
+                {darkMode ? '☀️' : '🌙'}
+              </button>
             </div>
-          </div>    
-        </nav>
+          </nav>
+        </div>
 
         <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px' }}>
           <Routes>
             <Route path="/" element={
-              <main style={{ paddingTop: '40px' }}>
-                <header style={{ marginBottom: '50px' }}>
-                  <h1 style={{ fontSize: '2.8rem', fontWeight: 800, marginBottom: '10px', letterSpacing: '-1.5px' }}>El lugar en donde TODO autor tiene visibilidad</h1>
-                  <p style={{ color: theme.textMuted, fontSize: '1.1rem' }}>Libros escritos por la comunidad para el mundo.</p>
+              <main style={{ paddingTop: '80px' }}>
+                
+                {/* CABECERA EDITORIAL CON HALO DE LUZ */}
+                <header style={{ marginBottom: '80px', textAlign: 'center', position: 'relative' }}>
+                  <div className="ambient-glow" style={{ background: `radial-gradient(circle, ${theme.accent}25 0%, transparent 60%)` }}></div>
+                  <p style={{ color: theme.accent, fontSize: '0.85rem', fontWeight: 800, letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '15px' }}>
+                    Comunidad Literaria
+                  </p>
+                  <h1 style={{ fontSize: '3.8rem', fontWeight: 400, marginBottom: '20px', lineHeight: 1.1, letterSpacing: '-1px' }}>
+                    El lugar donde <br/>
+                    <span style={{ fontStyle: 'italic', color: theme.accent, paddingRight: '10px' }}>todo autor</span> 
+                    tiene visibilidad.
+                  </h1>
+                  <p style={{ color: theme.textMuted, fontSize: '1.15rem', maxWidth: '500px', margin: '0 auto', fontWeight: 400, lineHeight: 1.6 }}>
+                    Explora historias únicas, escritas desde el alma y compartidas con el mundo. Tu próxima lectura favorita está aquí.
+                  </p>
                 </header>
 
                 {featuredBooks.length > 0 && (
@@ -412,72 +417,87 @@ const defaultCoverStyle = {
       </div>
 
 <style>{`
-  @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap');
 
   * { 
     margin: 0; 
     padding: 0; 
     box-sizing: border-box; 
-    transition: background-color 0.5s ease, color 0.3s ease, border-color 0.3s ease;
+    transition: background-color 0.6s ease, color 0.4s ease, border-color 0.4s ease;
   }
 
   body { 
     -webkit-font-smoothing: antialiased;
-    letter-spacing: -0.01em;
   }
 
-  /* El título principal con tipografía Serif para dar aire de "Libro" */
-  h1, h2 { 
-    font-family: 'Crimson Pro', serif; 
+  /* Tipografías Híbridas */
+  h1, h2, h3 { font-family: 'Crimson Pro', serif; }
+  p, span, a, button, nav { font-family: 'Inter', sans-serif; }
+
+  /* El Halo Mágico detrás del título */
+  .ambient-glow {
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 300px;
+    z-index: -1;
+    filter: blur(60px);
+    pointer-events: none;
   }
 
-  /* Efecto de elevación suave en las tarjetas */
+  /* Tarjetas estilo Glassmorphism (Cristal) */
   .book-card, .book-card-featured, .recent-item {
-    border-radius: 16px !important;
-    box-shadow: ${theme.shadow};
-    border: 1px solid ${theme.border} !important;
+    border-radius: 20px !important;
     background-color: ${theme.card} !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid ${theme.border} !important;
+    position: relative;
+    padding-top: 20px !important; /* Espacio para que flote la portada */
   }
 
-  .book-card:hover { 
-    transform: translateY(-6px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  /* Efecto de Portada Flotante */
+  .book-card > div:first-child, .book-card-featured > img, .book-card-featured > div:first-child {
+    transform: translateY(-15px) scale(0.95);
+    border-radius: 12px !important;
+    box-shadow: 0 15px 25px rgba(0,0,0,0.3);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Toque único: Hover con un resplandor muy sutil */
-  .book-card-featured:hover { 
-    transform: scale(1.02); 
-    border-color: ${theme.accent}77 !important; 
-    box-shadow: 0 0 20px ${theme.accent}15;
+  .book-card:hover > div:first-child, .book-card-featured:hover > img {
+    transform: translateY(-25px) scale(1);
+    box-shadow: 0 20px 30px rgba(0,0,0,0.4);
   }
 
-  /* Botón de cambio de modo con rotación */
-  .mode-toggle {
-    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Animaciones suaves al pasar el mouse */
+  .book-card:hover, .recent-item:hover { 
+    border-color: ${theme.accent} !important; 
   }
-  .mode-toggle:hover { transform: rotate(30deg) scale(1.2); }
+  
+  .mode-toggle { transition: transform 0.5s ease; }
+  .mode-toggle:hover { transform: rotate(45deg); }
 
-  /* Spinner elegante */
+  /* Enlaces del nav */
+  nav a:hover { opacity: 1 !important; color: ${theme.accent} !important; }
+
+  /* Spinner Elegante */
   .spinner { 
-    width: 30px; 
-    height: 30px; 
-    border: 2px solid ${theme.border}; 
+    width: 35px; height: 35px; 
+    border: 2px solid transparent; 
     border-top-color: ${theme.accent}; 
+    border-left-color: ${theme.accent};
     border-radius: 50%; 
-    animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
-    margin: 40px auto; 
+    animation: spin 1s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite; 
+    margin: 60px auto; 
   }
-
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Barra de scroll personalizada */
-  ::-webkit-scrollbar { width: 8px; }
-  ::-webkit-scrollbar-track { background: ${theme.bg}; }
-  ::-webkit-scrollbar-thumb { 
-    background: ${darkMode ? '#2d333f' : '#e0ddd8'}; 
-    border-radius: 10px; 
-  }
-  ::-webkit-scrollbar-thumb:hover { background: ${theme.accent}55; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: ${theme.border}; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: ${theme.accent}; }
 `}</style>
     </GoogleOAuthProvider>
   )
