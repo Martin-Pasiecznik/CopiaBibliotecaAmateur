@@ -172,15 +172,19 @@ function App() {
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  const theme = {
-    bg: darkMode ? '#0f1115' : '#fcfaf7', 
-    card: darkMode ? '#1a1d23' : '#ffffff',
-    accent: '#3498db',
-    textMain: darkMode ? '#e0e0e0' : '#2c3e50',
-    textMuted: darkMode ? '#a0a0a0' : '#7f8c8d',
-    border: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-    navBg: darkMode ? 'rgba(15, 17, 21, 0.8)' : 'rgba(252, 250, 247, 0.8)'
-  };
+const theme = {
+  // MODO OSCURO: Inspirado en bibliotecas de madera oscura y noche tranquila
+  // MODO CLARO: Inspirado en papel de libro antiguo y luz de mañana
+  bg: darkMode ? '#12141a' : '#f9f6f2', 
+  card: darkMode ? '#1c1f26' : '#ffffff',
+  accent: darkMode ? '#60a5fa' : '#3d7ab0', // Azul suave, menos agresivo
+  textMain: darkMode ? '#e2e8f0' : '#2c2c2c',
+  textMuted: darkMode ? '#94a3b8' : '#7d746d',
+  border: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
+  navBg: darkMode ? 'rgba(18, 20, 26, 0.85)' : 'rgba(249, 246, 242, 0.85)',
+  // Toque único: Sombras suaves y orgánicas
+  shadow: darkMode ? '0 10px 30px rgba(0,0,0,0.3)' : '0 10px 30px rgba(180,170,160,0.15)'
+};
 
   useEffect(() => {
     document.body.style.backgroundColor = theme.bg;
@@ -253,13 +257,14 @@ const fetchRecent = fetch('http://127.0.0.1:5001/api/books/recently-updated')
   };
 
   // --- ESTILO PORTADA PREDETERMINADA (REUTILIZABLE) ---
-  const defaultCoverStyle = {
-    width: '100%', aspectRatio: '2/3', borderRadius: '8px', 
-    backgroundColor: darkMode ? '#222' : '#eee',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: darkMode ? '#555' : '#aaa', fontWeight: 800, fontSize: '0.8rem',
-    border: `1px solid ${theme.border}`, textAlign: 'center'
-  };
+const defaultCoverStyle = {
+  width: '100%', aspectRatio: '2/3', borderRadius: '8px', 
+  backgroundColor: darkMode ? '#252a33' : '#efeae4',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  color: darkMode ? '#4a5568' : '#b2a89f', 
+  fontFamily: "'Crimson Pro', serif", fontSize: '0.9rem',
+  textAlign: 'center'
+};
 
   return (
     <GoogleOAuthProvider clientId="750793668642-7apu45i7te8b8gibnrelnhjgqj7vg512.apps.googleusercontent.com">
@@ -274,7 +279,7 @@ const fetchRecent = fetch('http://127.0.0.1:5001/api/books/recently-updated')
           <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
               <Link to="/" style={{ color: theme.accent, textDecoration: 'none', fontWeight: 800, fontSize: '1.5rem', letterSpacing: '-1px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '1.8rem' }}>📖</span> HISPANO
+                <span style={{ fontSize: '1.8rem' }}>📖</span> Biblioteca Amateur
               </Link>
               <div style={{ display: 'flex', gap: '15px' }}>
                 <Link to="/rankings" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8 }}>🏆 Rankings</Link>
@@ -294,7 +299,21 @@ const fetchRecent = fetch('http://127.0.0.1:5001/api/books/recently-updated')
                   <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>Salir</button>
                 </div>
               )}
-              <button onClick={() => setDarkMode(!darkMode)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>{darkMode ? '☀️' : '🌙'}</button>
+            <button 
+               className="mode-toggle" 
+               onClick={() => setDarkMode(!darkMode)} 
+               style={{ 
+              background: 'none', 
+              border: 'none', 
+              fontSize: '1.2rem', 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+                     }}
+            > 
+  {darkMode ? '☀️' : '🌙'}
+</button>
             </div>
           </div>    
         </nav>
@@ -304,7 +323,7 @@ const fetchRecent = fetch('http://127.0.0.1:5001/api/books/recently-updated')
             <Route path="/" element={
               <main style={{ paddingTop: '40px' }}>
                 <header style={{ marginBottom: '50px' }}>
-                  <h1 style={{ fontSize: '2.8rem', fontWeight: 800, marginBottom: '10px', letterSpacing: '-1.5px' }}>Explora historias únicas.</h1>
+                  <h1 style={{ fontSize: '2.8rem', fontWeight: 800, marginBottom: '10px', letterSpacing: '-1.5px' }}>El lugar en donde TODO autor tiene visibilidad</h1>
                   <p style={{ color: theme.textMuted, fontSize: '1.1rem' }}>Libros escritos por la comunidad para el mundo.</p>
                 </header>
 
@@ -392,16 +411,74 @@ const fetchRecent = fetch('http://127.0.0.1:5001/api/books/recently-updated')
         </div>
       </div>
 
-      <style>{`
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { background-color: ${theme.bg}; min-height: 100%; }
-        .book-card { transition: all 0.3s ease; }
-        .book-card:hover { transform: translateY(-8px); }
-        .book-card-featured:hover { transform: scale(1.03); border-color: ${theme.accent} !important; }
-        .recent-item:hover { transform: translateX(5px); border-color: ${theme.accent} !important; }
-        .spinner { width: 40px; height: 40px; border: 3px solid ${theme.border}; border-top-color: ${theme.accent}; border-radius: 50%; animation: spin 1s linear infinite; margin: 40px auto; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+<style>{`
+  @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+
+  * { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    transition: background-color 0.5s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  body { 
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+  }
+
+  /* El título principal con tipografía Serif para dar aire de "Libro" */
+  h1, h2 { 
+    font-family: 'Crimson Pro', serif; 
+  }
+
+  /* Efecto de elevación suave en las tarjetas */
+  .book-card, .book-card-featured, .recent-item {
+    border-radius: 16px !important;
+    box-shadow: ${theme.shadow};
+    border: 1px solid ${theme.border} !important;
+    background-color: ${theme.card} !important;
+  }
+
+  .book-card:hover { 
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  }
+
+  /* Toque único: Hover con un resplandor muy sutil */
+  .book-card-featured:hover { 
+    transform: scale(1.02); 
+    border-color: ${theme.accent}77 !important; 
+    box-shadow: 0 0 20px ${theme.accent}15;
+  }
+
+  /* Botón de cambio de modo con rotación */
+  .mode-toggle {
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .mode-toggle:hover { transform: rotate(30deg) scale(1.2); }
+
+  /* Spinner elegante */
+  .spinner { 
+    width: 30px; 
+    height: 30px; 
+    border: 2px solid ${theme.border}; 
+    border-top-color: ${theme.accent}; 
+    border-radius: 50%; 
+    animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+    margin: 40px auto; 
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Barra de scroll personalizada */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: ${theme.bg}; }
+  ::-webkit-scrollbar-thumb { 
+    background: ${darkMode ? '#2d333f' : '#e0ddd8'}; 
+    border-radius: 10px; 
+  }
+  ::-webkit-scrollbar-thumb:hover { background: ${theme.accent}55; }
+`}</style>
     </GoogleOAuthProvider>
   )
 }
