@@ -22,35 +22,35 @@ const BookDetail = ({ user, darkMode }) => {
   const [progress, setProgress] = useState({ lastChapterIndex: -1, readChapters: [] });
 
   const theme = {
-    accent: '#3498db',
-    textMain: darkMode ? '#e0e0e0' : '#2c3e50',
-    textMuted: darkMode ? '#a0a0a0' : '#7f8c8d',
-    card: darkMode ? '#1a1d23' : '#ffffff',
-    border: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+    accent: darkMode ? '#d4af37' : '#b85b3f', // Oro en dark, Tierra en light
+    textMain: darkMode ? '#e3e1db' : '#2c2926',
+    textMuted: darkMode ? '#8a8782' : '#7a746e',
+    card: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#ffffff',
+    border: darkMode ? 'rgba(212, 175, 55, 0.2)' : 'rgba(184, 91, 63, 0.15)',
     error: '#e74c3c',
-    success: '#2ecc71',
-    star: '#f1c40f',
-    bgLight: darkMode ? 'rgba(255,255,255,0.05)' : '#f8f9fa',
-    // --- NUEVO: COLORES PARA CAPÍTULOS LEÍDOS ---
-    readColor: darkMode ? '#1e3a2b' : '#d4edda', // Fondo verde según modo
-    readText: darkMode ? '#82e0aa' : '#155724'      // Texto verde según modo
+    success: darkMode ? '#82e0aa' : '#27ae60',
+    star: darkMode ? '#d4af37' : '#b85b3f',
+    bgLight: darkMode ? 'rgba(212, 175, 55, 0.05)' : '#fcfaf7',
+    // --- COLORES PARA CAPÍTULOS LEÍDOS ---
+    readColor: darkMode ? 'rgba(130, 224, 170, 0.05)' : '#f0f9f4',
+    readText: darkMode ? '#82e0aa' : '#1e7e44'
   };
 
-  // --- NUEVO: ESTILO PARA PORTADA POR DEFECTO ---
+  // --- ESTILO PARA PORTADA POR DEFECTO ---
   const defaultCoverStyle = {
     width: '280px',
     aspectRatio: '2/3',
-    borderRadius: '8px',
-    backgroundColor: darkMode ? '#222' : '#eee',
+    borderRadius: '12px',
+    backgroundColor: darkMode ? '#1a1a1a' : '#eee',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: darkMode ? '#555' : '#aaa',
+    color: theme.textMuted,
     fontWeight: 800,
-    fontSize: '1.2rem',
+    fontSize: '1rem',
     border: `1px solid ${theme.border}`,
     textAlign: 'center',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+    boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
   };
 
   const userReview = comments.find(c => c.user_email === user?.email);
@@ -61,7 +61,6 @@ const BookDetail = ({ user, darkMode }) => {
     fetchComments();
 
     if (user) {
-      // Cargar rating
       fetch(`http://127.0.0.1:5001/api/books/${id}/rating-status/${user.email}`)
         .then(r => r.json())
         .then(data => setRating({ 
@@ -70,7 +69,6 @@ const BookDetail = ({ user, darkMode }) => {
             userScore: data.user_score 
         }));
 
-      // Cargar estado en biblioteca
       fetch(`http://127.0.0.1:5001/api/library?email=${user.email}`)
         .then(r => r.json())
         .then(data => {
@@ -78,7 +76,6 @@ const BookDetail = ({ user, darkMode }) => {
           if (bookInLib) setLibraryStatus(bookInLib.status);
         });
       
-      // --- ACTUALIZADO: CARGAR PROGRESO PERSISTENTE ---
       if (user) {
         fetch(`http://127.0.0.1:5001/api/progress/${user.email}/${id}`)
           .then(r => {
@@ -176,48 +173,53 @@ const BookDetail = ({ user, darkMode }) => {
 
   const renderStars = (count) => {
     return [...Array(5)].map((_, i) => (
-      <span key={i} style={{ color: i < count ? theme.star : '#444', fontSize: '1.1rem' }}>
-        {i < count ? '★' : '☆'}
+      <span key={i} style={{ color: i < count ? theme.star : `${theme.textMuted}33`, fontSize: '1.1rem' }}>
+        {i < count ? '★' : '★'}
       </span>
     ));
   };
 
-  if (!book) return <div style={{padding: '100px', textAlign: 'center', color: theme.textMain}}>Cargando...</div>;
+  if (!book) return <div style={{padding: '100px', textAlign: 'center', color: theme.textMain, fontFamily: 'serif'}}>Cargando obra...</div>;
 
   return (
-    <div style={{ padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', color: theme.textMain }}>
+    <div style={{ padding: '60px 20px', maxWidth: '1100px', margin: '0 auto', color: theme.textMain, fontFamily: "'Inter', sans-serif" }}>
       
-      <div style={{ display: 'flex', gap: '50px', marginBottom: '60px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '60px', marginBottom: '80px', flexWrap: 'wrap' }}>
         
-        {/* --- VALIDACIÓN DE PORTADA --- */}
-        {book.author_note && book.author_note !== 'null' ? (
-          <img 
-            src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} 
-            style={{ width: '280px', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)', objectFit: 'cover' }} 
-            alt="Portada" 
-          />
-        ) : (
-          <div style={defaultCoverStyle}>SIN IMAGEN</div>
-        )}
+        {/* PORTADA */}
+        <div style={{ flexShrink: 0 }}>
+          {book.author_note && book.author_note !== 'null' ? (
+            <img 
+              src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} 
+              style={{ width: '300px', borderRadius: '12px', boxShadow: '0 30px 60px rgba(0,0,0,0.5)', border: `1px solid ${theme.border}`, objectFit: 'cover' }} 
+              alt="Portada" 
+            />
+          ) : (
+            <div style={defaultCoverStyle}>SIN PORTADA</div>
+          )}
+        </div>
 
-        <div style={{ flex: 1, minWidth: '300px' }}>
-          <h1 style={{ fontSize: '3rem', margin: '0 0 10px 0' }}>{book.title}</h1>
-          <p style={{ color: theme.accent, fontSize: '1.2rem', marginBottom: '20px' }}>{book.author}</p>
+        <div style={{ flex: 1, minWidth: '320px' }}>
+          <h1 style={{ fontSize: '3.5rem', margin: '0 0 10px 0', fontFamily: "'Crimson Pro', serif", fontWeight: 400, letterSpacing: '-1px' }}>{book.title}</h1>
+          <p style={{ color: theme.accent, fontSize: '1.3rem', marginBottom: '30px', fontWeight: 500, fontStyle: 'italic', fontFamily: "'Crimson Pro', serif" }}>por {book.author}</p>
 
-          <div style={{ marginBottom: '20px' }}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button key={star} onClick={() => handleRate(star)} onMouseEnter={() => setHover(star)} onMouseLeave={() => setHover(0)}
-                style={{ fontSize: '30px', cursor: 'pointer', background: 'none', border: 'none', color: star <= (hover || rating.userScore) ? theme.star : '#444' }}>
-                ★
-              </button>
-            ))}
-            <span style={{ marginLeft: '10px', fontSize: '1.5rem', fontWeight: 'bold' }}>{rating.average.toFixed(1)}</span>
+          <div style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <div style={{ display: 'flex' }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => handleRate(star)} onMouseEnter={() => setHover(star)} onMouseLeave={() => setHover(0)}
+                  style={{ fontSize: '32px', cursor: 'pointer', background: 'none', border: 'none', padding: 0, color: star <= (hover || rating.userScore) ? theme.star : `${theme.textMuted}33`, transition: 'transform 0.2s' }}>
+                  ★
+                </button>
+              ))}
+            </div>
+            <span style={{ fontSize: '2rem', fontWeight: 300, fontFamily: "'Crimson Pro', serif" }}>{rating.average.toFixed(1)}</span>
+            <span style={{ color: theme.textMuted, fontSize: '0.8rem', marginTop: '8px' }}>({rating.total} reseñas)</span>
           </div>
 
-          <div style={{ marginBottom: '30px' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'block', marginBottom: '10px', opacity: 0.7 }}>MI BIBLIOTECA</label>
+          <div style={{ marginBottom: '40px' }}>
+            <label style={{ fontSize: '0.7rem', fontWeight: 800, display: 'block', marginBottom: '12px', opacity: 0.6, letterSpacing: '2px' }}>MI BIBLIOTECA</label>
             <div style={{ 
-              display: 'flex', background: theme.bgLight, borderRadius: '12px', padding: '5px', gap: '5px', border: `1px solid ${theme.border}`, flexWrap: 'wrap'
+              display: 'flex', background: theme.bgLight, borderRadius: '50px', padding: '5px', gap: '5px', border: `1px solid ${theme.border}`, flexWrap: 'wrap'
             }}>
               {[
                 { id: 'reading', icon: '📖', label: 'Leyendo' },
@@ -227,107 +229,108 @@ const BookDetail = ({ user, darkMode }) => {
               ].map((item) => (
                 <button key={item.id} onClick={() => updateLibrary(item.id)} disabled={isUpdatingLib}
                   style={{
-                    flex: 1, minWidth: '80px', padding: '10px 5px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold',
+                    flex: 1, minWidth: '85px', padding: '8px 12px', border: 'none', borderRadius: '40px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700,
                     backgroundColor: libraryStatus === item.id ? theme.accent : 'transparent',
-                    color: libraryStatus === item.id ? 'white' : theme.textMain,
-                    transition: '0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px'
+                    color: libraryStatus === item.id ? (darkMode ? '#000' : '#fff') : theme.textMain,
+                    transition: '0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem' }}>{item.icon}</span>
-                  {item.label}
+                  {item.label.toUpperCase()}
                 </button>
               ))}
               {libraryStatus && (
-                <button onClick={() => updateLibrary('remove')} style={{ padding: '0 15px', background: 'transparent', border: 'none', color: theme.error, cursor: 'pointer', fontSize: '1.2rem' }} title="Quitar de mi biblioteca">✕</button>
+                <button onClick={() => updateLibrary('remove')} style={{ padding: '0 15px', background: 'transparent', border: 'none', color: theme.error, cursor: 'pointer', fontSize: '1.1rem' }} title="Quitar">✕</button>
               )}
             </div>
           </div>
 
-          <p style={{ lineHeight: '1.8', opacity: 0.9, marginBottom: '30px' }}>{book.description}</p>
+          <p style={{ lineHeight: '1.8', fontSize: '1.1rem', color: theme.textMuted, marginBottom: '40px', maxWidth: '600px' }}>{book.description}</p>
           
           {chapters.length > 0 && (
-            <Link to={`/reader/${book.id}/${progress.lastChapterIndex !== -1 ? progress.lastChapterIndex : 0}`} style={{ background: theme.accent, color: 'white', padding: '12px 35px', borderRadius: '30px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block' }}>
-              {progress.lastChapterIndex !== -1 ? "CONTINUAR LEYENDO" : "COMENZAR A LEER"}
+            <Link to={`/reader/${book.id}/${progress.lastChapterIndex !== -1 ? progress.lastChapterIndex : 0}`} 
+              style={{ background: theme.accent, color: darkMode ? '#000' : '#fff', padding: '16px 45px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', display: 'inline-block', boxShadow: `0 10px 20px ${theme.accent}33` }}>
+              {progress.lastChapterIndex !== -1 ? "CONTINUAR LEYENDO" : "COMENZAR LECTURA"}
             </Link>
           )}
         </div>
       </div>
 
-      <div style={{ marginBottom: '60px' }}>
-        <h3 style={{ fontSize: '1.5rem', borderBottom: `2px solid ${theme.border}`, paddingBottom: '10px', marginBottom: '20px' }}>Índice de capítulos</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
+      <div style={{ marginBottom: '80px' }}>
+        <h3 style={{ fontSize: '1.8rem', fontFamily: "'Crimson Pro', serif", borderBottom: `1px solid ${theme.border}`, paddingBottom: '15px', marginBottom: '30px' }}>Índice de capítulos</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
           {chapters.map((ch, index) => {
             const isRead = progress.readChapters.includes(ch.id);
             const isLast = progress.lastChapterIndex === index;
 
             return (
               <Link key={ch.id} to={`/reader/${book.id}/${index}`} style={{ 
-                padding: '15px', 
+                padding: '20px', 
                 background: isRead ? theme.readColor : theme.card, 
-                border: isLast ? `2px solid ${theme.accent}` : `1px solid ${theme.border}`,
-                borderRadius: '8px', 
+                border: isLast ? `1px solid ${theme.accent}` : `1px solid ${theme.border}`,
+                borderRadius: '12px', 
                 textDecoration: 'none', 
                 color: isRead ? theme.readText : theme.textMain, 
                 display: 'flex', 
                 justifyContent: 'space-between', 
-                transition: '0.2s',
-                position: 'relative'
+                alignItems: 'center',
+                transition: '0.3s'
               }}
-              onMouseOver={(e) => e.currentTarget.style.borderColor = theme.accent}
-              onMouseOut={(e) => e.currentTarget.style.borderColor = isLast ? theme.accent : theme.border}
+              onMouseOver={(e) => { e.currentTarget.style.borderColor = theme.accent; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.borderColor = isLast ? theme.accent : theme.border; e.currentTarget.style.transform = 'translateY(0)'; }}
               >
-                <span style={{ fontWeight: isLast ? 'bold' : 'normal' }}>
-                  {index + 1}. {ch.title}
-                  {isLast && <span style={{color: theme.accent, fontSize: '0.7rem', display: 'block'}}>📍 Donde quedaste</span>}
-                </span>
-                <span style={{ fontSize: '0.8rem', color: isRead ? theme.readText : theme.textMuted }}>
-                  {isRead ? '✅' : `${ch.word_count} pal.`}
-                </span>
+                <div>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.accent, display: 'block', marginBottom: '4px' }}>{String(index + 1).padStart(2, '0')}</span>
+                  <span style={{ fontWeight: isLast ? 700 : 500, fontSize: '1.05rem' }}>{ch.title}</span>
+                  {isLast && <span style={{color: theme.accent, fontSize: '0.65rem', fontWeight: 800, display: 'block', marginTop: '4px'}}>📍 ÚLTIMA LECTURA</span>}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>{isRead ? 'VISTO' : `${ch.word_count} PAL.`}</span>
+                </div>
               </Link>
             );
           })}
         </div>
       </div>
 
-      <div style={{ borderTop: `2px solid ${theme.border}`, paddingTop: '40px' }}>
-        <h3 style={{ fontSize: '1.8rem', marginBottom: '30px' }}>Reseñas de la comunidad</h3>
+      <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: '60px' }}>
+        <h3 style={{ fontSize: '2.2rem', fontFamily: "'Crimson Pro', serif", marginBottom: '40px' }}>Críticas de la comunidad</h3>
 
         <div style={{ 
-          background: theme.card, padding: '30px', borderRadius: '15px', 
-          border: userReview ? `2px solid ${theme.accent}` : `1px solid ${theme.border}`, marginBottom: '50px', position: 'relative'
+          background: theme.card, padding: '40px', borderRadius: '20px', 
+          border: userReview ? `1px solid ${theme.accent}` : `1px solid ${theme.border}`, marginBottom: '60px', position: 'relative'
         }}>
-          {userReview && <div style={{ position: 'absolute', top: '-12px', right: '20px', background: theme.accent, color: 'white', padding: '2px 12px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 'bold' }}>RESEÑA YA PUBLICADA</div>}
+          {userReview && <div style={{ position: 'absolute', top: '-12px', right: '30px', background: theme.accent, color: darkMode ? '#000' : '#fff', padding: '4px 15px', borderRadius: '40px', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '1px' }}>TU CRÍTICA</div>}
 
-          <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '30px', marginBottom: '30px', flexWrap: 'wrap' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>1. Estado de lectura</label>
+              <label style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.textMuted, display: 'block', marginBottom: '10px' }}>PROGRESO</label>
               <select value={readingStatus} onChange={(e) => setReadingStatus(e.target.value)}
-                style={{ width: '100%', padding: '12px', borderRadius: '6px', background: darkMode ? '#2c313c' : '#f0f2f5', color: theme.textMain, border: `1px solid ${theme.border}` }}>
-                <option value="">-- Selecciona progreso --</option>
-                <option value="Completada">✅ Obra completada</option>
-                <option value="Leyendo actualmente">📖 Leyendo actualmente</option>
-                {chapters.map((ch, i) => <option key={i} value={`Capítulo ${i + 1}`}>📍 Cap. {i + 1}</option>)}
-                <option value="Abandonada">⏹️ Abandonada</option>
+                style={{ width: '100%', padding: '14px', borderRadius: '10px', background: theme.bgLight, color: theme.textMain, border: `1px solid ${theme.border}`, fontSize: '0.9rem', outline: 'none' }}>
+                <option value="">-- Seleccionar progreso --</option>
+                <option value="Completada">Obra completada</option>
+                <option value="Leyendo actualmente">Leyendo actualmente</option>
+                {chapters.map((ch, i) => <option key={i} value={`Capítulo ${i + 1}`}>Capítulo {i + 1}</option>)}
+                <option value="Abandonada">Abandonada</option>
               </select>
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>2. Tu calificación</label>
+              <label style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.textMuted, display: 'block', marginBottom: '10px' }}>TU CALIFICACIÓN</label>
               <div style={{ padding: '8px 0' }}>{renderStars(rating.userScore)}</div>
             </div>
           </div>
           
           <textarea value={newComment} onChange={e => setNewComment(e.target.value)} 
-            style={{ width: '100%', height: '100px', padding: '15px', borderRadius: '8px', background: darkMode ? '#000' : '#fff', color: theme.textMain, border: `1px solid ${theme.border}`, marginBottom: '15px' }} 
-            placeholder="Escribe tu opinión..." />
+            style={{ width: '100%', height: '140px', padding: '20px', borderRadius: '12px', background: darkMode ? 'rgba(0,0,0,0.2)' : '#fff', color: theme.textMain, border: `1px solid ${theme.border}`, marginBottom: '20px', outline: 'none', fontSize: '1rem', fontFamily: 'inherit', resize: 'none' }} 
+            placeholder="Escribe tu opinión aquí..." />
           
-          {errorMsg && <div style={{ color: theme.error, marginBottom: '15px', fontWeight: 'bold' }}>{errorMsg}</div>}
+          {errorMsg && <div style={{ color: theme.error, marginBottom: '20px', fontSize: '0.85rem', fontWeight: 600 }}>{errorMsg}</div>}
           
-          <button onClick={postComment} style={{ padding: '12px 30px', background: userReview ? theme.success : theme.accent, color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '800' }}>
-            {userReview ? "ACTUALIZAR MI RESEÑA" : "PUBLICAR RESEÑA"}
+          <button onClick={postComment} style={{ padding: '14px 40px', background: userReview ? theme.success : theme.accent, color: darkMode ? '#000' : '#fff', border: 'none', borderRadius: '50px', cursor: 'pointer', fontWeight: 800, fontSize: '0.85rem' }}>
+            {userReview ? "ACTUALIZAR RESEÑA" : "PUBLICAR CRÍTICA"}
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
           {comments.map(c => {
             const statusMatch = c.text.match(/^\[Estado: (.*?)\]/);
             const statusTag = statusMatch ? statusMatch[1] : null;
@@ -335,22 +338,22 @@ const BookDetail = ({ user, darkMode }) => {
 
             return (
               <div key={c.id} style={{ 
-                display: 'flex', gap: '20px', background: theme.card, padding: '25px', borderRadius: '12px', 
+                display: 'flex', gap: '25px', background: theme.card, padding: '30px', borderRadius: '15px', 
                 border: c.user_email === user?.email ? `1px solid ${theme.accent}` : `1px solid ${theme.border}`
               }}>
-                <img src={c.display_photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.user_email}`} style={{ width: '55px', height: '55px', borderRadius: '50%', border: `2px solid ${theme.accent}` }} alt="User" />
+                <img src={c.display_photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.user_email}`} style={{ width: '60px', height: '60px', borderRadius: '50%', border: `2px solid ${theme.accent}`, padding: '2px', background: theme.bgLight }} alt="User" />
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', alignItems: 'flex-start' }}>
                     <div>
-                      <h4 style={{ margin: 0 }}>{c.display_name || c.user_name}</h4>
-                      {statusTag && <span style={{ fontSize: '0.7rem', color: theme.accent, fontWeight: 'bold' }}>{statusTag}</span>}
+                      <h4 style={{ margin: 0, fontSize: '1.1rem', fontFamily: "'Crimson Pro', serif" }}>{c.display_name || c.user_name}</h4>
+                      {statusTag && <span style={{ fontSize: '0.65rem', color: theme.accent, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>{statusTag}</span>}
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div>{renderStars(c.user_rating || 0)}</div>
-                      <small style={{ color: theme.textMuted }}>{new Date(c.timestamp).toLocaleDateString()}</small>
+                      <div style={{ marginBottom: '4px' }}>{renderStars(c.user_rating || 0)}</div>
+                      <small style={{ color: theme.textMuted, fontSize: '0.7rem' }}>{new Date(c.timestamp).toLocaleDateString()}</small>
                     </div>
                   </div>
-                  <p style={{ margin: 0, opacity: 0.9 }}>{cleanText}</p>
+                  <p style={{ margin: 0, opacity: 0.85, lineHeight: '1.6', fontSize: '0.95rem' }}>{cleanText}</p>
                 </div>
               </div>
             );
@@ -360,19 +363,20 @@ const BookDetail = ({ user, darkMode }) => {
 
       {notif && (
         <div style={{ 
-          position: 'fixed', bottom: '30px', left: '30px', backgroundColor: '#2c3e50', color: 'white',
-          padding: '12px 25px', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', zIndex: 9999,
-          display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.9rem', borderLeft: `5px solid ${theme.accent}`,
+          position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#1a1a1a', color: 'white',
+          padding: '16px 30px', borderRadius: '50px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', gap: '15px', fontSize: '0.85rem', border: `1px solid ${theme.accent}`,
           animation: 'slideIn 0.5s ease-out'
         }}>
-          <span>✨</span> {notif}
+          <span style={{ color: theme.accent }}>✦</span> {notif}
         </div>
       )}
 
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;800&display=swap');
         @keyframes slideIn {
-          from { transform: translateX(-100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
+          from { transform: translateY(100px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
       `}</style>
     </div>

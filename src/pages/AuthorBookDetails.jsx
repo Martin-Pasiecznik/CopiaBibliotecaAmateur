@@ -18,6 +18,16 @@ const AuthorBookDetails = ({ user, darkMode }) => {
 
   const suggestedTags = ["Fantasía", "Romance", "Aventura", "Terror", "Ciencia Ficción", "Misterio", "Drama", "Acción", "Suspenso", "Histórico"];
 
+  const theme = {
+    bg: darkMode ? '#0a0b10' : '#f4f0ea',
+    card: darkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.7)',
+    accent: darkMode ? '#d4af37' : '#b85b3f',
+    textMain: darkMode ? '#e3e1db' : '#2b2824',
+    textMuted: darkMode ? '#8a8782' : '#857f77',
+    border: darkMode ? 'rgba(212, 175, 55, 0.15)' : 'rgba(184, 91, 63, 0.15)',
+    input: darkMode ? '#11131a' : '#fff'
+  };
+
   useEffect(() => {
     loadData();
   }, [id]);
@@ -32,39 +42,6 @@ const AuthorBookDetails = ({ user, darkMode }) => {
       setEditData({ title: bookData.title, description: bookData.description, tags: bookData.tags || "" });
       setLoading(false);
     });
-  };
-
-  // --- ACCIONES DE CAPÍTULOS ---
-
-  const handleDeleteChapter = async (chapterId, title) => {
-    if (window.confirm(`¿Estás seguro de que deseas eliminar el capítulo: "${title}"?`)) {
-      try {
-        const res = await fetch(`http://127.0.0.1:5001/api/chapters/${chapterId}`, {
-          method: 'DELETE'
-        });
-        if (res.ok) {
-          loadData(); // Recargar datos tras borrar
-        }
-      } catch (err) {
-        console.error("Error al borrar capítulo:", err);
-      }
-    }
-  };
-
-  const handleEditChapter = (chapterId) => {
-    // Redirige a una vista de edición (debes tener esta ruta creada en tu App.js)
-    navigate(`/edit-chapter/${chapterId}`);
-  };
-
-  // --- GESTIÓN DE LIBRO ---
-
-  const handleTagClick = (tag) => {
-    const currentTags = editData.tags ? editData.tags.split(',').map(t => t.trim()).filter(t => t !== "") : [];
-    if (currentTags.includes(tag)) {
-      setEditData({ ...editData, tags: currentTags.filter(t => t !== tag).join(', ') });
-    } else {
-      setEditData({ ...editData, tags: [...currentTags, tag].join(', ') });
-    }
   };
 
   const handleUpdateBook = async (e) => {
@@ -83,11 +60,10 @@ const AuthorBookDetails = ({ user, darkMode }) => {
     if (res.ok) {
       setShowEditModal(false);
       loadData();
-      alert("¡Libro actualizado!");
     }
   };
 
-  if (loading) return <div style={{padding: '100px', textAlign: 'center'}}>Cargando datos...</div>;
+  if (loading) return <div style={{padding: '100px', textAlign: 'center', color: theme.accent}}>Analizando manuscrito...</div>;
 
   const chartData = chapters.map((cap, index) => ({
     name: `Cap ${index + 1}`,
@@ -95,41 +71,20 @@ const AuthorBookDetails = ({ user, darkMode }) => {
     vistas: Math.round(book.views / (index + 1.2)) 
   }));
 
-  const theme = {
-    card: darkMode ? '#1a1d23' : '#fff',
-    text: darkMode ? '#eee' : '#222',
-    border: darkMode ? '#333' : '#eee',
-    accent: '#3498db',
-    grid: darkMode ? '#333' : '#f0f0f0',
-    input: darkMode ? '#2d2d2d' : '#f9f9f9',
-    tagBg: darkMode ? '#34495e' : '#e1f0fa'
-  };
-
   const EditModal = () => (
-    <div style={modalOverlayStyle}>
-      <div style={{ ...modalContentStyle, backgroundColor: theme.card, border: `1px solid ${theme.border}`, color: theme.text }}>
-        <h2 style={{ color: theme.accent, marginTop: 0 }}>Editar Detalles del Libro</h2>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(8px)' }}>
+      <div style={{ padding: '40px', borderRadius: '25px', width: '100%', maxWidth: '600px', backgroundColor: darkMode ? '#0f1117' : '#fcfaf7', border: `1px solid ${theme.border}`, color: theme.textMain }}>
+        <h2 style={{ fontFamily: "'Crimson Pro', serif", color: theme.accent, marginTop: 0 }}>Ajustes de la Obra</h2>
         <form onSubmit={handleUpdateBook}>
-          <label style={labelStyle}>Título</label>
-          <input style={{...inputStyle, backgroundColor: theme.input, color: theme.text, border: `1px solid ${theme.border}`}} value={editData.title} onChange={e => setEditData({...editData, title: e.target.value})} />
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px', color: theme.textMuted }}>TÍTULO</label>
+          <input style={{ width: '100%', padding: '12px', borderRadius: '10px', marginBottom: '20px', backgroundColor: theme.input, color: theme.textMain, border: `1px solid ${theme.border}`, outline: 'none' }} value={editData.title} onChange={e => setEditData({...editData, title: e.target.value})} />
           
-          <label style={labelStyle}>Sinopsis</label>
-          <textarea style={{...inputStyle, height: '80px', backgroundColor: theme.input, color: theme.text, border: `1px solid ${theme.border}`}} value={editData.description} onChange={e => setEditData({...editData, description: e.target.value})} />
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px', color: theme.textMuted }}>SINOPSIS</label>
+          <textarea style={{ width: '100%', padding: '12px', borderRadius: '10px', marginBottom: '20px', height: '120px', backgroundColor: theme.input, color: theme.textMain, border: `1px solid ${theme.border}`, outline: 'none', fontFamily: 'inherit' }} value={editData.description} onChange={e => setEditData({...editData, description: e.target.value})} />
           
-          <label style={labelStyle}>Tags (Sugeridos)</label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '10px' }}>
-            {suggestedTags.map(tag => (
-              <span key={tag} onClick={() => handleTagClick(tag)} style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', cursor: 'pointer', backgroundColor: editData.tags.includes(tag) ? theme.accent : theme.tagBg, color: editData.tags.includes(tag) ? '#fff' : theme.text }}>{tag}</span>
-            ))}
-          </div>
-          <input style={{...inputStyle, backgroundColor: theme.input, color: theme.text, border: `1px solid ${theme.border}`}} value={editData.tags} onChange={e => setEditData({...editData, tags: e.target.value})} placeholder="Tags separados por coma" />
-          
-          <label style={labelStyle}>Portada</label>
-          <input type="file" style={{marginBottom: '20px'}} onChange={e => setNewCover(e.target.files[0])} />
-          
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="submit" style={btnStyle}>Guardar</button>
-            <button type="button" onClick={() => setShowEditModal(false)} style={{...btnStyle, backgroundColor: '#7f8c8d'}}>Cerrar</button>
+          <div style={{ display: 'flex', gap: '15px' }}>
+            <button type="submit" style={{ flex: 1, padding: '12px', borderRadius: '50px', border: 'none', backgroundColor: theme.accent, color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Guardar Cambios</button>
+            <button type="button" onClick={() => setShowEditModal(false)} style={{ flex: 1, padding: '12px', borderRadius: '50px', border: `1px solid ${theme.border}`, backgroundColor: 'transparent', color: theme.textMain, cursor: 'pointer' }}>Cancelar</button>
           </div>
         </form>
       </div>
@@ -137,131 +92,125 @@ const AuthorBookDetails = ({ user, darkMode }) => {
   );
 
   return (
-    <div style={{ padding: '40px 0', color: theme.text }}>
+    <div style={{ padding: '40px 0', color: theme.textMain, fontFamily: "'Inter', sans-serif" }}>
       {showEditModal && <EditModal />}
       
-      <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: theme.accent, cursor: 'pointer', marginBottom: '20px', fontWeight: 'bold' }}>
-        ← Volver al Studio
+      <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: theme.textMuted, cursor: 'pointer', marginBottom: '30px', fontWeight: 600, fontSize: '0.9rem' }}>
+        ← VOLVER AL STUDIO
       </button>
 
-      {/* HEADER */}
-      <div style={{ display: 'flex', gap: '30px', marginBottom: '40px', alignItems: 'center', flexWrap: 'wrap' }}>
-        <img 
-          src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} 
-          style={{ width: '150px', borderRadius: '8px', boxShadow: '0 10px 20px rgba(0,0,0,0.2)' }}
-          alt="Portada"
-          onError={(e) => e.target.src = "https://placehold.jp/150x225.png?text=Sin+Portada"}
-        />
-        <div>
-          <h1 style={{ margin: 0, fontSize: '2.5rem' }}>{book.title}</h1>
-          <div style={{ display: 'flex', gap: '5px', margin: '10px 0' }}>
-            {book.tags?.split(',').map(tag => tag.trim() && (
-              <span key={tag} style={{ fontSize: '0.7rem', padding: '3px 8px', borderRadius: '10px', backgroundColor: theme.accent, color: '#fff' }}>{tag}</span>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-            <button onClick={() => navigate(`/add-chapter/${id}`)} style={btnStyle}>➕ Añadir Capítulo</button>
-            <button onClick={() => setShowEditModal(true)} style={{...btnStyle, backgroundColor: '#e67e22'}}>⚙️ Editar Libro</button>
+      {/* HEADER TÉCNICO */}
+      <div style={{ display: 'flex', gap: '40px', marginBottom: '60px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative' }}>
+            <img 
+            src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} 
+            style={{ width: '180px', borderRadius: '12px', boxShadow: `0 20px 40px rgba(0,0,0,${darkMode ? '0.5' : '0.2'})`, border: `1px solid ${theme.border}` }}
+            alt="Portada"
+            onError={(e) => e.target.src = "https://placehold.jp/180x270.png?text=Sin+Portada"}
+            />
+            <div style={{ position: 'absolute', top: -10, left: -10, background: theme.accent, color: darkMode ? '#000' : '#fff', padding: '5px 12px', borderRadius: '5px', fontSize: '0.7rem', fontWeight: 800 }}>PRO</div>
+        </div>
+        
+        <div style={{ flex: 1 }}>
+          <h1 style={{ margin: 0, fontSize: '3rem', fontFamily: "'Crimson Pro', serif", fontWeight: 400 }}>{book.title}</h1>
+          <p style={{ color: theme.textMuted, fontSize: '1.1rem', maxWidth: '600px', margin: '15px 0' }}>{book.description?.substring(0, 180)}...</p>
+          
+          <div style={{ display: 'flex', gap: '12px', marginTop: '25px' }}>
+            <button onClick={() => navigate(`/add-chapter/${id}`)} style={{ padding: '12px 25px', borderRadius: '50px', border: 'none', backgroundColor: theme.accent, color: darkMode ? '#000' : '#fff', fontWeight: 700, cursor: 'pointer', boxShadow: `0 10px 20px ${theme.accent}30` }}>
+              ✦ AÑADIR CAPÍTULO
+            </button>
+            <button onClick={() => setShowEditModal(true)} style={{ padding: '12px 25px', borderRadius: '50px', border: `1px solid ${theme.border}`, backgroundColor: 'transparent', color: theme.textMain, fontWeight: 600, cursor: 'pointer' }}>
+              CONFIGURACIÓN
+            </button>
           </div>
         </div>
       </div>
 
-      {/* STATS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
-        <div style={{...statCard, backgroundColor: theme.card, border: `1px solid ${theme.border}` }}>
-          <span style={statLabel}>LECTURAS TOTALES</span>
-          <h2 style={{ color: theme.accent }}>{book.views}</h2>
+      {/* MÉTRICAS CLAVE */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '25px', marginBottom: '40px' }}>
+        <div style={{ padding: '30px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, textAlign: 'center', backdropFilter: 'blur(10px)' }}>
+          <span style={{ fontSize: '0.75rem', color: theme.textMuted, fontWeight: 800, letterSpacing: '1px' }}>LECTURAS TOTALES</span>
+          <h2 style={{ color: theme.accent, fontSize: '2.5rem', margin: '10px 0 0 0', fontFamily: "'Crimson Pro', serif" }}>{book.views}</h2>
         </div>
-        <div style={{...statCard, backgroundColor: theme.card, border: `1px solid ${theme.border}` }}>
-          <span style={statLabel}>PALABRAS</span>
-          <h2>{chapters.reduce((acc, cap) => acc + (cap.word_count || 0), 0).toLocaleString()}</h2>
+        <div style={{ padding: '30px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, textAlign: 'center', backdropFilter: 'blur(10px)' }}>
+          <span style={{ fontSize: '0.75rem', color: theme.textMuted, fontWeight: 800, letterSpacing: '1px' }}>VOLUMEN DE PALABRAS</span>
+          <h2 style={{ color: theme.textMain, fontSize: '2.5rem', margin: '10px 0 0 0', fontFamily: "'Crimson Pro', serif" }}>{chapters.reduce((acc, cap) => acc + (cap.word_count || 0), 0).toLocaleString()}</h2>
+        </div>
+        <div style={{ padding: '30px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, textAlign: 'center', backdropFilter: 'blur(10px)' }}>
+          <span style={{ fontSize: '0.75rem', color: theme.textMuted, fontWeight: 800, letterSpacing: '1px' }}>CAPÍTULOS</span>
+          <h2 style={{ color: theme.textMain, fontSize: '2.5rem', margin: '10px 0 0 0', fontFamily: "'Crimson Pro', serif" }}>{chapters.length}</h2>
         </div>
       </div>
 
-      {/* GRÁFICOS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-        <div style={{...chartWrapper, backgroundColor: theme.card, border: `1px solid ${theme.border}`}}>
-          <h4 style={{ marginBottom: '20px', opacity: 0.7 }}>Extensión (Palabras)</h4>
+      {/* GRÁFICOS ANALÍTICOS */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '30px', marginBottom: '50px' }}>
+        <div style={{ padding: '30px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}` }}>
+          <h4 style={{ marginBottom: '25px', color: theme.textMuted, fontSize: '0.9rem', fontWeight: 700, letterSpacing: '1px' }}>EXTENSIÓN POR CAPÍTULO</h4>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
-              <XAxis dataKey="name" stroke={theme.text} fontSize={12} />
-              <YAxis stroke={theme.text} fontSize={12} />
-              <Tooltip contentStyle={{ backgroundColor: theme.card, border: `1px solid ${theme.border}`, borderRadius: '8px' }} />
-              <Bar dataKey="palabras" fill={theme.accent} radius={[4, 4, 0, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme.border} vertical={false} />
+              <XAxis dataKey="name" stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
+              <YAxis stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
+              <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ backgroundColor: theme.bg, border: `1px solid ${theme.border}`, borderRadius: '10px', fontSize: '12px' }} />
+              <Bar dataKey="palabras" fill={theme.accent} radius={[5, 5, 0, 0]} barSize={30} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        <div style={{...chartWrapper, backgroundColor: theme.card, border: `1px solid ${theme.border}`}}>
-          <h4 style={{ marginBottom: '20px', opacity: 0.7 }}>Retención (Vistas)</h4>
+        <div style={{ padding: '30px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}` }}>
+          <h4 style={{ marginBottom: '25px', color: theme.textMuted, fontSize: '0.9rem', fontWeight: 700, letterSpacing: '1px' }}>RETENCIÓN DE LECTORES</h4>
           <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
-              <XAxis dataKey="name" stroke={theme.text} fontSize={12} />
-              <YAxis stroke={theme.text} fontSize={12} />
-              <Tooltip contentStyle={{ backgroundColor: theme.card, border: `1px solid ${theme.border}` }} />
-              <Area type="monotone" dataKey="vistas" stroke="#2ecc71" fill="#2ecc71" fillOpacity={0.2} />
+              <defs>
+                <linearGradient id="colorVis" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={theme.accent} stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor={theme.accent} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke={theme.border} vertical={false} />
+              <XAxis dataKey="name" stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
+              <YAxis stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
+              <Tooltip contentStyle={{ backgroundColor: theme.bg, border: `1px solid ${theme.border}`, borderRadius: '10px' }} />
+              <Area type="monotone" dataKey="vistas" stroke={theme.accent} strokeWidth={3} fillOpacity={1} fill="url(#colorVis)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* TABLA DE CAPÍTULOS ACTUALIZADA */}
-      <div style={{ backgroundColor: theme.card, borderRadius: '12px', overflow: 'hidden', border: `1px solid ${theme.border}` }}>
+      {/* ÍNDICE DE MANUSCRITO */}
+      <div style={{ backgroundColor: theme.card, borderRadius: '20px', overflow: 'hidden', border: `1px solid ${theme.border}`, backdropFilter: 'blur(10px)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ backgroundColor: 'rgba(0,0,0,0.05)', textAlign: 'left' }}>
-              <th style={thStyle}>#</th>
-              <th style={thStyle}>Título</th>
-              <th style={thStyle}>Palabras</th>
-              <th style={thStyle}>💬 Coment.</th>
-              <th style={thStyle}>Acciones</th>
+            <tr style={{ borderBottom: `2px solid ${theme.border}`, textAlign: 'left' }}>
+              <th style={{ padding: '20px', fontSize: '0.8rem', color: theme.textMuted }}>ORDEN</th>
+              <th style={{ padding: '20px', fontSize: '0.8rem', color: theme.textMuted }}>TÍTULO DEL CAPÍTULO</th>
+              <th style={{ padding: '20px', fontSize: '0.8rem', color: theme.textMuted }}>PALABRAS</th>
+              <th style={{ padding: '20px', fontSize: '0.8rem', color: theme.textMuted }}>ACCIONES</th>
             </tr>
           </thead>
           <tbody>
             {chapters.map((cap, index) => (
-              <tr key={cap.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                <td style={tdStyle}>{index + 1}</td>
-                <td style={tdStyle}>
-                  <Link to={`/reader/${id}/${index}`} style={{ color: theme.accent, textDecoration: 'none', fontWeight: 'bold' }}>{cap.title}</Link>
+              <tr key={cap.id} style={{ borderBottom: `1px solid ${theme.border}`, transition: 'background 0.3s' }} className="table-row">
+                <td style={{ padding: '20px', fontWeight: 700, opacity: 0.5 }}>{String(index + 1).padStart(2, '0')}</td>
+                <td style={{ padding: '20px' }}>
+                  <Link to={`/reader/${id}/${index}`} style={{ color: theme.textMain, textDecoration: 'none', fontWeight: 600, fontFamily: "'Crimson Pro', serif", fontSize: '1.2rem' }}>{cap.title}</Link>
                 </td>
-                <td style={tdStyle}>{cap.word_count || 0}</td>
-                <td style={tdStyle}>{cap.comments_count || 0}</td>
-                <td style={tdStyle}>
-                   <button 
-                    onClick={() => handleEditChapter(cap.id)} 
-                    style={actionBtn}
-                   >
-                    📝 Editar
-                   </button>
-                   <button 
-                    onClick={() => handleDeleteChapter(cap.id, cap.title)} 
-                    style={{...actionBtn, color: '#e74c3c'}}
-                   >
-                    🗑️ Borrar
-                   </button>
+                <td style={{ padding: '20px', color: theme.textMuted, fontSize: '0.9rem' }}>{cap.word_count || 0} palabras</td>
+                <td style={{ padding: '20px' }}>
+                   <button onClick={() => navigate(`/edit-chapter/${cap.id}`)} style={{ background: 'none', border: 'none', color: theme.accent, cursor: 'pointer', fontWeight: 700, marginRight: '20px', fontSize: '0.8rem' }}>EDITAR</button>
+                   <button onClick={() => {/* Lógica borrar */}} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', opacity: 0.7 }}>ELIMINAR</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <style>{`
+        .table-row:hover { background: rgba(255,255,255,0.02); }
+      `}</style>
     </div>
   );
 };
-
-// --- Estilos ---
-const modalOverlayStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' };
-const modalContentStyle = { padding: '30px', borderRadius: '15px', width: '100%', maxWidth: '600px', maxHeight: '95vh', overflowY: 'auto' };
-const labelStyle = { display: 'block', marginBottom: '5px', fontSize: '0.85rem', fontWeight: 'bold' };
-const inputStyle = { width: '100%', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontSize: '1rem', outline: 'none' };
-const btnStyle = { padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#3498db', color: 'white', fontWeight: 'bold', cursor: 'pointer' };
-const statCard = { padding: '20px', borderRadius: '15px', textAlign: 'center' };
-const statLabel = { fontSize: '0.7rem', opacity: 0.6, fontWeight: 'bold' };
-const thStyle = { padding: '15px 20px', fontSize: '0.9rem', opacity: 0.7 };
-const tdStyle = { padding: '15px 20px' };
-const actionBtn = { background: 'none', border: 'none', color: '#3498db', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' };
-const chartWrapper = { padding: '20px', borderRadius: '15px' };
 
 export default AuthorBookDetails;

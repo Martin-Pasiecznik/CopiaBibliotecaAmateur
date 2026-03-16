@@ -7,8 +7,8 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
 
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fontSize, setFontSize] = useState(18);
-  const [fontFamily, setFontFamily] = useState('serif');
+  const [fontSize, setFontSize] = useState(20); // Un poco más grande por defecto
+  const [fontFamily, setFontFamily] = useState("'Crimson Pro', serif");
 
   // ESTADOS PARA COMENTARIOS
   const [comments, setComments] = useState([]);
@@ -18,6 +18,15 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
   const hasCounted = useRef(false);
   const triggerRef = useRef(null);
   const timerRef = useRef(null);
+
+  const theme = {
+    accent: darkMode ? '#d4af37' : '#b85b3f',
+    textMain: darkMode ? '#e3e1db' : '#2c2926',
+    textMuted: darkMode ? '#8a8782' : '#7a746e',
+    bg: darkMode ? '#121418' : '#fcfaf7',
+    card: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#ffffff',
+    border: darkMode ? 'rgba(212, 175, 55, 0.15)' : 'rgba(184, 91, 63, 0.12)'
+  };
 
   // 1. CARGA INICIAL DE CAPÍTULOS
   useEffect(() => {
@@ -30,19 +39,15 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
       const currentCap = chapters[parseInt(chapterIndex)];
       if (currentCap) {
         fetchComments(currentCap.id);
-        
-        // --- NUEVO: ACTUALIZAR PROGRESO EN EL BACKEND ---
         if (user) {
           updateProgress(currentCap.id);
         }
-        // ------------------------------------------------
       }
       window.scrollTo(0, 0);
       hasCounted.current = false;
     }
-  }, [chapterIndex, chapters, user]); // Añadido user a dependencias
+  }, [chapterIndex, chapters, user]);
 
-  // --- NUEVO: FUNCIÓN PARA ENVIAR PROGRESO AL BACKEND ---
   const updateProgress = (chapterId) => {
     fetch(`http://127.0.0.1:5001/api/progress/update`, {
       method: 'POST',
@@ -55,7 +60,6 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
     })
     .catch(err => console.error("Error actualizando progreso:", err));
   };
-  // -----------------------------------------------------
 
   const loadChapterData = () => {
     setLoading(true);
@@ -107,7 +111,6 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
     }
   };
 
-  // --- LÓGICA DEL SENSOR DE VISTAS (CORREGIDA) ---
   useEffect(() => {
     if (loading || !chapters.length || !triggerRef.current) return;
 
@@ -136,150 +139,183 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
     };
   }, [loading, id, chapterIndex, chapters]);
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '100px', opacity: 0.5, color: darkMode ? '#fff' : '#000' }}>Abriendo pergaminos...</div>;
+  if (loading) return <div style={{ textAlign: 'center', padding: '100px', color: theme.accent, fontFamily: "'Crimson Pro', serif", fontSize: '1.2rem' }}>Abriendo manuscrito...</div>;
 
   const currentIndex = parseInt(chapterIndex) || 0;
   const currentChapter = chapters[currentIndex];
 
-  if (!currentChapter) return <div style={{ textAlign: 'center', padding: '50px', color: darkMode ? '#fff' : '#000' }}>Capítulo no encontrado.</div>;
+  if (!currentChapter) return <div style={{ textAlign: 'center', padding: '50px', color: theme.textMain }}>Capítulo no encontrado.</div>;
 
   const contentLines = currentChapter.content.split('\n');
   const midPoint = Math.floor(contentLines.length / 2);
-
-  const theme = {
-    text: darkMode ? '#d1d1d1' : '#2c3e50',
-    bg: darkMode ? '#1a1d23' : '#f8f9fa',
-    card: darkMode ? '#242831' : '#fff',
-    border: darkMode ? '#333' : '#eee'
-  };
 
   const readerTextStyle = {
     fontSize: `${fontSize}px`,
     fontFamily: fontFamily,
     lineHeight: '1.8',
-    maxWidth: '750px',
+    maxWidth: '800px',
     margin: '0 auto',
     textAlign: 'justify',
-    color: theme.text,
+    color: theme.textMain,
     whiteSpace: 'pre-wrap',
-    padding: '0 20px'
+    padding: '0 30px',
+    opacity: 0.95
   };
 
   return (
-    <div style={{ position: 'relative', backgroundColor: darkMode ? '#121418' : '#fff', minHeight: '100vh' }}>
+    <div style={{ position: 'relative', backgroundColor: theme.bg, minHeight: '100vh', transition: '0.3s', fontFamily: "'Inter', sans-serif" }}>
+      {/* HEADER TOOLS */}
       <div style={{ 
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '10px 20px', position: 'sticky', top: '0',
+        padding: '15px 30px', position: 'sticky', top: '0',
         backgroundColor: theme.bg, borderBottom: `1px solid ${theme.border}`,
-        zIndex: 1000, marginBottom: '40px'
+        zIndex: 1000, marginBottom: '60px', backdropFilter: 'blur(10px)'
       }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button style={btnSmall(darkMode)} onClick={() => setFontSize(fontSize + 2)}>A+</button>
-          <button style={btnSmall(darkMode)} onClick={() => setFontSize(fontSize - 2)}>A-</button>
-        </div>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button style={btnSmall(darkMode)} onClick={() => navigate(`/book/${id}`)}>Índice</button>
-          <button style={btnSmall(darkMode)} onClick={() => setDarkMode(!darkMode)}>
+          <button style={btnSmall(darkMode, theme)} onClick={() => setFontSize(fontSize + 2)}>A<span style={{fontSize: '0.6rem'}}>+</span></button>
+          <button style={btnSmall(darkMode, theme)} onClick={() => setFontSize(fontSize - 2)}>A<span style={{fontSize: '0.6rem'}}>-</span></button>
+        </div>
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <button style={{...btnSmall(darkMode, theme), border: 'none', fontWeight: 700, letterSpacing: '1px'}} onClick={() => navigate(`/book/${id}`)}>VOLVER AL ÍNDICE</button>
+          <button style={{...btnSmall(darkMode, theme), borderRadius: '50%', width: '40px', height: '40px', padding: 0}} onClick={() => setDarkMode(!darkMode)}>
             {darkMode ? '☀️' : '🌙'}
           </button>
         </div>
       </div>
 
-      <main style={{ paddingBottom: '40px' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '40px', color: darkMode ? '#fff' : '#000' }}>
-          {currentChapter.title}
-        </h1>
+      <main style={{ paddingBottom: '60px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '60px', padding: '0 20px' }}>
+          <span style={{ color: theme.accent, fontWeight: 800, fontSize: '0.8rem', letterSpacing: '3px' }}>CAPÍTULO {currentIndex + 1}</span>
+          <h1 style={{ 
+            fontSize: '3.5rem', marginTop: '10px', color: theme.textMain, 
+            fontFamily: "'Crimson Pro', serif", fontWeight: 400 
+          }}>
+            {currentChapter.title}
+          </h1>
+          <div style={{ width: '40px', height: '2px', background: theme.accent, margin: '20px auto' }}></div>
+        </div>
+
         <div style={readerTextStyle}>
           {contentLines.slice(0, midPoint).join('\n')}
-          <div ref={triggerRef} style={{ height: '20px', margin: '10px 0' }} />
+          <div ref={triggerRef} style={{ height: '40px', margin: '20px 0', opacity: 0.1, textAlign: 'center' }}>✦</div>
           {contentLines.slice(midPoint).join('\n')}
         </div>
       </main>
 
       {/* SECCIÓN COMENTARIOS */}
-      <section style={{ maxWidth: '750px', margin: '60px auto', padding: '0 20px' }}>
-        <h3 style={{ color: theme.text, borderBottom: `2px solid ${theme.border}`, paddingBottom: '10px' }}>
-          Comentarios del Capítulo ({comments.length})
+      <section style={{ maxWidth: '800px', margin: '80px auto', padding: '0 30px' }}>
+        <h3 style={{ 
+          color: theme.textMain, fontFamily: "'Crimson Pro', serif", fontSize: '1.8rem',
+          borderBottom: `1px solid ${theme.border}`, paddingBottom: '20px', marginBottom: '40px'
+        }}>
+          Notas de los lectores ({comments.length})
         </h3>
-        <form onSubmit={handlePostComment} style={{ marginBottom: '30px', marginTop: '20px' }}>
+
+        <form onSubmit={handlePostComment} style={{ marginBottom: '50px' }}>
           <textarea 
             style={{ 
-              width: '100%', padding: '15px', borderRadius: '10px', 
-              backgroundColor: theme.card, color: theme.text, 
+              width: '100%', padding: '20px', borderRadius: '15px', 
+              backgroundColor: theme.card, color: theme.textMain, 
               border: `1px solid ${theme.border}`, outline: 'none',
-              resize: 'vertical', minHeight: '80px', boxSizing: 'border-box'
+              resize: 'vertical', minHeight: '120px', boxSizing: 'border-box',
+              fontSize: '1rem', fontFamily: 'inherit', transition: '0.3s'
             }}
-            placeholder="¿Qué te pareció este capítulo?..."
+            onFocus={(e) => e.target.style.borderColor = theme.accent}
+            placeholder="Comparte tus impresiones sobre este capítulo..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
           />
-          <button 
-            type="submit" 
-            disabled={isSubmitting}
-            style={{ 
-              marginTop: '10px', padding: '10px 20px', borderRadius: '5px', 
-              backgroundColor: '#3498db', color: 'white', border: 'none', 
-              cursor: 'pointer', fontWeight: 'bold', opacity: isSubmitting ? 0.6 : 1
-            }}
-          >
-            {isSubmitting ? "Enviando..." : "Publicar comentario"}
-          </button>
+          <div style={{ textAlign: 'right', marginTop: '15px' }}>
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              style={{ 
+                padding: '12px 35px', borderRadius: '50px', 
+                backgroundColor: theme.accent, color: darkMode ? '#000' : '#fff', border: 'none', 
+                cursor: 'pointer', fontWeight: 800, fontSize: '0.8rem',
+                opacity: isSubmitting ? 0.6 : 1, boxShadow: `0 10px 20px ${theme.accent}33`
+              }}
+            >
+              {isSubmitting ? "ENVIANDO..." : "PUBLICAR NOTA"}
+            </button>
+          </div>
         </form>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {comments.map((c) => (
             <div key={c.id} style={{ 
-              padding: '15px', borderRadius: '10px', 
-              backgroundColor: theme.card, border: `1px solid ${theme.border}` 
+              padding: '25px', borderRadius: '15px', 
+              backgroundColor: theme.card, border: `1px solid ${theme.border}`,
+              display: 'flex', gap: '20px'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                <span style={{ fontWeight: 'bold', color: '#3498db' }}>{c.user_name}</span>
-                <span style={{ fontSize: '0.75rem', opacity: 0.5, color: theme.text }}>
-                  {new Date(c.timestamp).toLocaleDateString()}
-                </span>
+              <div style={{ 
+                width: '45px', height: '45px', borderRadius: '50%', 
+                background: theme.accent, color: darkMode ? '#000' : '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 800, fontSize: '0.9rem', flexShrink: 0
+              }}>
+                {c.user_name.charAt(0).toUpperCase()}
               </div>
-              <p style={{ margin: 0, color: theme.text, lineHeight: '1.5' }}>{c.text}</p>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 700, color: theme.accent, fontSize: '0.9rem' }}>{c.user_name}</span>
+                  <span style={{ fontSize: '0.7rem', color: theme.textMuted, fontWeight: 600 }}>
+                    {new Date(c.timestamp).toLocaleDateString()}
+                  </span>
+                </div>
+                <p style={{ margin: 0, color: theme.textMain, lineHeight: '1.6', fontSize: '0.95rem', opacity: 0.9 }}>{c.text}</p>
+              </div>
             </div>
           ))}
         </div>
       </section>
 
+      {/* NAVEGACIÓN INFERIOR */}
       <div style={{ 
         display: 'flex', justifyContent: 'center', alignItems: 'center', 
-        gap: '30px', padding: '60px 0 100px 0',
-        borderTop: `1px solid ${theme.border}`, marginTop: '40px'
+        gap: '40px', padding: '80px 0 120px 0',
+        borderTop: `1px solid ${theme.border}`, marginTop: '60px'
       }}>
         <button 
-          style={{...navBtnStyle, opacity: currentIndex === 0 ? 0.3 : 1}} 
+          style={{...navBtnStyle(theme), opacity: currentIndex === 0 ? 0.2 : 1}} 
           disabled={currentIndex === 0}
           onClick={() => navigate(`/reader/${id}/${currentIndex - 1}`)}
         >
-          ← Anterior
+          ANTERIOR
         </button>
-        <span style={{ fontWeight: 600, opacity: 0.6, color: darkMode ? '#fff' : '#000' }}> 
-          {currentIndex + 1} / {chapters.length} 
-        </span>
+        <div style={{ textAlign: 'center' }}>
+          <span style={{ fontWeight: 800, color: theme.textMain, fontSize: '1rem', display: 'block' }}> 
+            {currentIndex + 1} / {chapters.length} 
+          </span>
+          <span style={{ fontSize: '0.6rem', color: theme.accent, fontWeight: 800, letterSpacing: '1px' }}>PÁGINA</span>
+        </div>
         <button 
-          style={{...navBtnStyle, opacity: currentIndex === chapters.length - 1 ? 0.3 : 1}} 
+          style={{...navBtnStyle(theme), opacity: currentIndex === chapters.length - 1 ? 0.2 : 1}} 
           disabled={currentIndex === chapters.length - 1}
           onClick={() => navigate(`/reader/${id}/${currentIndex + 1}`)}
         >
-          Siguiente →
+          SIGUIENTE
         </button>
       </div>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700;800&display=swap');
+      `}</style>
     </div>
   );
 };
 
-const btnSmall = (darkMode) => ({ 
-  padding: '6px 12px', cursor: 'pointer', borderRadius: '4px', 
-  border: '1px solid #ccc', backgroundColor: 'transparent', 
-  color: darkMode ? '#fff' : '#000' 
+const btnSmall = (darkMode, theme) => ({ 
+  padding: '8px 15px', cursor: 'pointer', borderRadius: '8px', 
+  border: `1px solid ${theme.border}`, backgroundColor: theme.card, 
+  color: theme.textMain, fontSize: '0.8rem', transition: '0.3s',
+  display: 'flex', alignItems: 'center', justifyContent: 'center'
 });
 
-const navBtnStyle = { 
-  padding: '12px 30px', backgroundColor: '#3498db', color: 'white', 
-  border: 'none', borderRadius: '30px', cursor: 'pointer', fontWeight: 'bold' 
-};
+const navBtnStyle = (theme) => ({ 
+  padding: '14px 40px', backgroundColor: 'transparent', color: theme.textMain, 
+  border: `1px solid ${theme.accent}`, borderRadius: '50px', cursor: 'pointer', 
+  fontWeight: 800, fontSize: '0.75rem', letterSpacing: '2px', transition: '0.3s'
+});
 
 export default BookReader;
