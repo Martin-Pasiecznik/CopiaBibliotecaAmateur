@@ -9,7 +9,17 @@ const AddChapter = ({ user, darkMode }) => {
   const [content, setContent] = useState('');
   const [issubmitting, setIsSubmitting] = useState(false);
 
-  // --- LÓGICA DE CONTEO EN TIEMPO REAL ---
+  // ARMONIZACIÓN: Sistema de diseño unificado
+  const theme = {
+    bg: darkMode ? '#0a0b10' : '#f4f0ea',
+    card: darkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.7)',
+    accent: darkMode ? '#d4af37' : '#b85b3f', 
+    textMain: darkMode ? '#e3e1db' : '#2b2824',
+    textMuted: darkMode ? '#8a8782' : '#857f77',
+    border: darkMode ? 'rgba(212, 175, 55, 0.2)' : 'rgba(184, 91, 63, 0.2)',
+    inputBg: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)',
+  };
+
   const countWords = (text) => {
     if (!text.trim()) return 0;
     return text.trim().split(/\s+/).length;
@@ -19,9 +29,9 @@ const AddChapter = ({ user, darkMode }) => {
 
   if (!user) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <h2>Acceso Denegado</h2>
-        <p>Debes iniciar sesión para escribir capítulos.</p>
+      <div style={{ textAlign: 'center', padding: '150px 20px', color: theme.textMain }}>
+        <h2 style={{ fontFamily: "'Crimson Pro', serif", fontSize: '2rem' }}>Acceso Denegado</h2>
+        <p style={{ opacity: 0.7 }}>Debes iniciar sesión para escribir capítulos.</p>
       </div>
     );
   }
@@ -34,7 +44,6 @@ const AddChapter = ({ user, darkMode }) => {
       book_id: id,
       title: title,
       content: content,
-      // Enviamos el conteo al backend por si acaso, aunque el backend ya lo calcula
       word_count: wordCount, 
       author_email: user.email 
     };
@@ -49,8 +58,7 @@ const AddChapter = ({ user, darkMode }) => {
       return res.json();
     })
     .then(() => {
-      alert("¡Capítulo publicado con éxito!");
-      navigate(`/dashboard/book/${id}`); // Volver a los detalles del libro
+      navigate(`/dashboard/book/${id}`);
     })
     .catch(err => {
       alert(err.message);
@@ -58,112 +66,127 @@ const AddChapter = ({ user, darkMode }) => {
     });
   };
 
-  // --- ESTILOS ---
-  const containerStyle = {
-    maxWidth: '900px',
-    margin: '40px auto',
-    padding: '30px',
-    backgroundColor: darkMode ? '#1a1d23' : '#fff',
-    borderRadius: '15px',
-    boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
-    color: darkMode ? '#fff' : '#000'
-  };
-
-  const inputStyle = {
-    width: '100%',
-    padding: '15px',
-    marginBottom: '20px',
-    borderRadius: '8px',
-    border: `1px solid ${darkMode ? '#333' : '#eee'}`,
-    backgroundColor: darkMode ? '#2d2d2d' : '#f9f9f9',
-    color: darkMode ? '#fff' : '#000',
-    fontSize: '1.4rem',
-    fontWeight: 'bold',
-    outline: 'none'
-  };
-
-  const textareaStyle = {
-    ...inputStyle,
-    height: '450px',
-    fontSize: '1.1rem',
-    fontWeight: 'normal',
-    lineHeight: '1.8',
-    resize: 'vertical',
-    fontFamily: 'serif'
-  };
-
-  const wordCountBadge = {
-    padding: '8px 15px',
-    backgroundColor: darkMode ? '#333' : '#f0f0f0',
-    borderRadius: '20px',
-    fontSize: '0.9rem',
-    color: wordCount > 500 ? '#2ecc71' : (darkMode ? '#aaa' : '#666'),
-    fontWeight: 'bold',
-    display: 'inline-block',
-    marginBottom: '10px'
-  };
-
   return (
-    <div style={containerStyle}>
-      <h2 style={{ marginBottom: '10px', color: '#3498db' }}>Nuevo Capítulo</h2>
+    <div style={{ 
+      maxWidth: '900px', 
+      margin: '0 auto', 
+      padding: '120px 20px 60px 20px', 
+      color: theme.textMain,
+      fontFamily: "'Inter', sans-serif"
+    }}>
       
-      {/* CUADRITO DE INFORMACIÓN */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-         <span style={wordCountBadge}>
-            📝 {wordCount} palabras
-         </span>
-         <span style={{...wordCountBadge, color: '#3498db'}}>
-            📖 Lectura estimada: {Math.ceil(wordCount / 200)} min
-         </span>
-      </div>
-      
-      <form onSubmit={handleSubmit}>
-        <input 
-          style={inputStyle}
-          placeholder="Título del capítulo..."
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
+      <button 
+        onClick={() => navigate(-1)} 
+        style={{ 
+          background: 'none', border: 'none', color: theme.textMuted, 
+          cursor: 'pointer', marginBottom: '30px', fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: '8px'
+        }}
+      >
+        ← Cancelar y salir
+      </button>
+
+      <div style={{ 
+        backgroundColor: theme.card, 
+        padding: '40px', 
+        borderRadius: '24px', 
+        border: `1px solid ${theme.border}`,
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+      }}>
         
-        <textarea 
-          style={textareaStyle}
-          placeholder="Comienza a escribir tu historia aquí..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          required
-        />
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
-          <button 
-            type="button" 
-            onClick={() => navigate(-1)}
-            style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontWeight: 'bold' }}
-          >
-            ❌ Cancelar y salir
-          </button>
+        <header style={{ marginBottom: '30px' }}>
+          <h2 style={{ 
+            fontFamily: "'Crimson Pro', serif", 
+            fontSize: '2.2rem', 
+            margin: 0,
+            color: theme.accent 
+          }}>Nuevo Capítulo</h2>
           
-          <button 
-            type="submit" 
-            style={{
-                padding: '15px 40px',
-                backgroundColor: '#3498db',
-                color: 'white',
+          <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+             <span style={badgeStyle(theme)}>
+                📝 {wordCount} palabras
+             </span>
+             <span style={{...badgeStyle(theme), color: theme.accent, borderColor: theme.accent}}>
+                📖 Lectura: {Math.ceil(wordCount / 200)} min
+             </span>
+          </div>
+        </header>
+        
+        <form onSubmit={handleSubmit}>
+          <input 
+            style={inputStyle(theme, true)}
+            placeholder="Título del capítulo..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+          
+          <textarea 
+            style={inputStyle(theme, false)}
+            placeholder="Comienza a escribir tu historia aquí..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            required
+          />
+          
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '30px' }}>
+            <button 
+              type="submit" 
+              disabled={issubmitting}
+              style={{
+                padding: '16px 45px',
+                backgroundColor: theme.accent,
+                color: darkMode ? '#000' : '#fff',
                 border: 'none',
-                borderRadius: '30px',
+                borderRadius: '50px',
                 cursor: issubmitting ? 'not-allowed' : 'pointer',
-                fontWeight: 'bold',
-                fontSize: '1.1rem',
-                boxShadow: '0 4px 15px rgba(52, 152, 219, 0.4)'
-            }} 
-            disabled={issubmitting}
-          >
-            {issubmitting ? 'Guardando...' : 'Publicar Capítulo'}
-          </button>
-        </div>
-      </form>
+                fontWeight: 800,
+                fontSize: '1rem',
+                boxShadow: `none`,
+                transition: 'all 0.3s ease',
+                opacity: issubmitting ? 0.6 : 1
+              }}
+            >
+              {issubmitting ? 'Publicando...' : 'Publicar Capítulo'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
+
+// --- ESTILOS AUXILIARES ---
+const badgeStyle = (theme) => ({
+  padding: '6px 14px',
+  backgroundColor: theme.darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)', // Fondo sutil
+  border: `1px solid ${theme.border}`,
+  borderRadius: '20px',
+  fontSize: '0.75rem',
+  color: theme.textMuted, // Ambos quedan en el color gris/atenuado
+  fontWeight: 700,
+  letterSpacing: '0.5px'
+});
+
+const inputStyle = (theme, isTitle) => ({
+  width: '100%',
+  padding: '20px',
+  marginBottom: '20px',
+  borderRadius: '12px',
+  border: `1px solid ${theme.border}`,
+  backgroundColor: theme.inputBg,
+  color: theme.textMain,
+  fontSize: isTitle ? '1.5rem' : '1.2rem',
+  fontWeight: isTitle ? '700' : '400',
+  fontFamily: isTitle ? "'Crimson Pro', serif" : "'Crimson Pro', serif",
+  lineHeight: '1.6',
+  outline: 'none',
+  boxSizing: 'border-box',
+  height: isTitle ? 'auto' : '500px',
+  resize: isTitle ? 'none' : 'vertical',
+  transition: 'border-color 0.3s ease'
+});
 
 export default AddChapter;

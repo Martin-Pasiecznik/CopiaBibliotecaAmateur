@@ -62,7 +62,7 @@ const AuthorDashboard = ({ user, darkMode }) => {
           textDecoration: 'none',
           fontWeight: 700,
           fontSize: '0.9rem',
-          boxShadow: `0 10px 20px ${theme.accent}30`,
+          boxShadow: `none`,
           transition: 'transform 0.3s ease'
         }}
         onMouseOver={e => e.currentTarget.style.transform = 'translateY(-3px)'}

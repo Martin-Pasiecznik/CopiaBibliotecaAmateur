@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 
 const BookReader = ({ user, darkMode, setDarkMode }) => {
   const { id, chapterIndex } = useParams();
@@ -7,10 +7,9 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
 
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fontSize, setFontSize] = useState(20); // Un poco más grande por defecto
+  const [fontSize, setFontSize] = useState(20);
   const [fontFamily, setFontFamily] = useState("'Crimson Pro', serif");
 
-  // ESTADOS PARA COMENTARIOS
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,22 +27,18 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
     border: darkMode ? 'rgba(212, 175, 55, 0.15)' : 'rgba(184, 91, 63, 0.12)'
   };
 
-  // 1. CARGA INICIAL DE CAPÍTULOS
   useEffect(() => {
     loadChapterData();
   }, [id]);
 
-  // 2. CAMBIO DE CAPÍTULO Y ACTUALIZACIÓN DE PROGRESO
   useEffect(() => {
     if (chapters.length > 0) {
       const currentCap = chapters[parseInt(chapterIndex)];
       if (currentCap) {
         fetchComments(currentCap.id);
-        if (user) {
-          updateProgress(currentCap.id);
-        }
+        if (user) updateProgress(currentCap.id);
       }
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       hasCounted.current = false;
     }
   }, [chapterIndex, chapters, user]);
@@ -57,8 +52,7 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
         book_id: parseInt(id),
         chapter_id: chapterId
       })
-    })
-    .catch(err => console.error("Error actualizando progreso:", err));
+    }).catch(err => console.error("Error actualizando progreso:", err));
   };
 
   const loadChapterData = () => {
@@ -113,7 +107,6 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
 
   useEffect(() => {
     if (loading || !chapters.length || !triggerRef.current) return;
-
     const observer = new IntersectionObserver((entries) => {
       const [entry] = entries;
       if (entry.isIntersecting && !hasCounted.current) {
@@ -123,13 +116,9 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chapter_index: parseInt(chapterIndex) })
-          })
-          .then(res => res.json())
-          .catch(err => console.error("Error al contabilizar:", err));
+          }).catch(err => console.error("Error al contabilizar:", err));
         }, 2000);
-      } else {
-        if (timerRef.current) clearTimeout(timerRef.current);
-      }
+      } else if (timerRef.current) clearTimeout(timerRef.current);
     }, { threshold: 0.1 });
 
     observer.observe(triggerRef.current);
@@ -164,32 +153,45 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
 
   return (
     <div style={{ position: 'relative', backgroundColor: theme.bg, minHeight: '100vh', transition: '0.3s', fontFamily: "'Inter', sans-serif" }}>
-      {/* HEADER TOOLS */}
-      <div style={{ 
+      
+      <header style={{ 
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '15px 30px', position: 'sticky', top: '0',
+        padding: '0 30px', position: 'sticky', top: '0', height: '70px',
         backgroundColor: theme.bg, borderBottom: `1px solid ${theme.border}`,
-        zIndex: 1000, marginBottom: '60px', backdropFilter: 'blur(10px)'
+        zIndex: 1100, boxShadow: darkMode ? '0 4px 10px rgba(0,0,0,0.5)' : '0 4px 10px rgba(0,0,0,0.05)'
       }}>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button style={btnSmall(darkMode, theme)} onClick={() => setFontSize(fontSize + 2)}>A<span style={{fontSize: '0.6rem'}}>+</span></button>
-          <button style={btnSmall(darkMode, theme)} onClick={() => setFontSize(fontSize - 2)}>A<span style={{fontSize: '0.6rem'}}>-</span></button>
+        {/* LADO IZQUIERDO: LOGO + HERRAMIENTAS DE TEXTO */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '25px' }}>
+          <Link to="/" style={{ 
+            color: theme.textMain, textDecoration: 'none', fontWeight: 800, fontSize: '1.1rem', 
+            display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Crimson Pro', serif",
+            transition: 'color 0.3s'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.color = theme.accent}
+          onMouseOut={(e) => e.currentTarget.style.color = theme.textMain}
+          >
+            <span style={{ color: theme.accent }}>✦</span> HISPANO
+          </Link>
+
+          <div style={{ display: 'flex', gap: '10px', borderLeft: `1px solid ${theme.border}`, paddingLeft: '20px' }}>
+            <button style={btnSmall(darkMode, theme)} onClick={() => setFontSize(fontSize + 2)}>A<span style={{fontSize: '0.6rem'}}>+</span></button>
+            <button style={btnSmall(darkMode, theme)} onClick={() => setFontSize(fontSize - 2)}>A<span style={{fontSize: '0.6rem'}}>-</span></button>
+          </div>
         </div>
+        
+        {/* LADO DERECHO: NAVEGACIÓN Y TEMA */}
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
           <button style={{...btnSmall(darkMode, theme), border: 'none', fontWeight: 700, letterSpacing: '1px'}} onClick={() => navigate(`/book/${id}`)}>VOLVER AL ÍNDICE</button>
           <button style={{...btnSmall(darkMode, theme), borderRadius: '50%', width: '40px', height: '40px', padding: 0}} onClick={() => setDarkMode(!darkMode)}>
             {darkMode ? '☀️' : '🌙'}
           </button>
         </div>
-      </div>
+      </header>
 
-      <main style={{ paddingBottom: '60px' }}>
+      <main style={{ paddingTop: '40px', paddingBottom: '20px' }}>
         <div style={{ textAlign: 'center', marginBottom: '60px', padding: '0 20px' }}>
           <span style={{ color: theme.accent, fontWeight: 800, fontSize: '0.8rem', letterSpacing: '3px' }}>CAPÍTULO {currentIndex + 1}</span>
-          <h1 style={{ 
-            fontSize: '3.5rem', marginTop: '10px', color: theme.textMain, 
-            fontFamily: "'Crimson Pro', serif", fontWeight: 400 
-          }}>
+          <h1 style={{ fontSize: '3.5rem', marginTop: '10px', color: theme.textMain, fontFamily: "'Crimson Pro', serif", fontWeight: 400 }}>
             {currentChapter.title}
           </h1>
           <div style={{ width: '40px', height: '2px', background: theme.accent, margin: '20px auto' }}></div>
@@ -202,79 +204,10 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
         </div>
       </main>
 
-      {/* SECCIÓN COMENTARIOS */}
-      <section style={{ maxWidth: '800px', margin: '80px auto', padding: '0 30px' }}>
-        <h3 style={{ 
-          color: theme.textMain, fontFamily: "'Crimson Pro', serif", fontSize: '1.8rem',
-          borderBottom: `1px solid ${theme.border}`, paddingBottom: '20px', marginBottom: '40px'
-        }}>
-          Notas de los lectores ({comments.length})
-        </h3>
-
-        <form onSubmit={handlePostComment} style={{ marginBottom: '50px' }}>
-          <textarea 
-            style={{ 
-              width: '100%', padding: '20px', borderRadius: '15px', 
-              backgroundColor: theme.card, color: theme.textMain, 
-              border: `1px solid ${theme.border}`, outline: 'none',
-              resize: 'vertical', minHeight: '120px', boxSizing: 'border-box',
-              fontSize: '1rem', fontFamily: 'inherit', transition: '0.3s'
-            }}
-            onFocus={(e) => e.target.style.borderColor = theme.accent}
-            placeholder="Comparte tus impresiones sobre este capítulo..."
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-          />
-          <div style={{ textAlign: 'right', marginTop: '15px' }}>
-            <button 
-              type="submit" 
-              disabled={isSubmitting}
-              style={{ 
-                padding: '12px 35px', borderRadius: '50px', 
-                backgroundColor: theme.accent, color: darkMode ? '#000' : '#fff', border: 'none', 
-                cursor: 'pointer', fontWeight: 800, fontSize: '0.8rem',
-                opacity: isSubmitting ? 0.6 : 1, boxShadow: `0 10px 20px ${theme.accent}33`
-              }}
-            >
-              {isSubmitting ? "ENVIANDO..." : "PUBLICAR NOTA"}
-            </button>
-          </div>
-        </form>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {comments.map((c) => (
-            <div key={c.id} style={{ 
-              padding: '25px', borderRadius: '15px', 
-              backgroundColor: theme.card, border: `1px solid ${theme.border}`,
-              display: 'flex', gap: '20px'
-            }}>
-              <div style={{ 
-                width: '45px', height: '45px', borderRadius: '50%', 
-                background: theme.accent, color: darkMode ? '#000' : '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 800, fontSize: '0.9rem', flexShrink: 0
-              }}>
-                {c.user_name.charAt(0).toUpperCase()}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 700, color: theme.accent, fontSize: '0.9rem' }}>{c.user_name}</span>
-                  <span style={{ fontSize: '0.7rem', color: theme.textMuted, fontWeight: 600 }}>
-                    {new Date(c.timestamp).toLocaleDateString()}
-                  </span>
-                </div>
-                <p style={{ margin: 0, color: theme.textMain, lineHeight: '1.6', fontSize: '0.95rem', opacity: 0.9 }}>{c.text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* NAVEGACIÓN INFERIOR */}
-      <div style={{ 
+      <nav style={{ 
         display: 'flex', justifyContent: 'center', alignItems: 'center', 
-        gap: '40px', padding: '80px 0 120px 0',
-        borderTop: `1px solid ${theme.border}`, marginTop: '60px'
+        gap: '40px', padding: '60px 0', maxWidth: '800px', margin: '0 auto',
+        borderTop: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`
       }}>
         <button 
           style={{...navBtnStyle(theme), opacity: currentIndex === 0 ? 0.2 : 1}} 
@@ -296,7 +229,57 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
         >
           SIGUIENTE
         </button>
-      </div>
+      </nav>
+
+      <section style={{ maxWidth: '800px', margin: '60px auto', padding: '0 30px' }}>
+        <h3 style={{ color: theme.textMain, fontFamily: "'Crimson Pro', serif", fontSize: '1.8rem', paddingBottom: '20px', marginBottom: '40px' }}>
+          Notas de los lectores ({comments.length})
+        </h3>
+
+        <form onSubmit={handlePostComment} style={{ marginBottom: '50px' }}>
+          <textarea 
+            style={{ 
+              width: '100%', padding: '20px', borderRadius: '15px', backgroundColor: theme.card, 
+              color: theme.textMain, border: `1px solid ${theme.border}`, outline: 'none',
+              resize: 'vertical', minHeight: '120px', boxSizing: 'border-box',
+              fontSize: '1rem', fontFamily: 'inherit', transition: '0.3s'
+            }}
+            placeholder="Comparte tus impresiones sobre este capítulo..."
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+          />
+          <div style={{ textAlign: 'right', marginTop: '15px' }}>
+            <button type="submit" disabled={isSubmitting} style={{ 
+                padding: '12px 35px', borderRadius: '50px', backgroundColor: theme.accent, 
+                color: darkMode ? '#000' : '#fff', border: 'none', cursor: 'pointer', fontWeight: 800, 
+                fontSize: '0.8rem', opacity: isSubmitting ? 0.6 : 1, boxShadow: `0 10px 20px ${theme.accent}33`
+            }}>
+              {isSubmitting ? "ENVIANDO..." : "PUBLICAR NOTA"}
+            </button>
+          </div>
+        </form>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '80px' }}>
+          {comments.map((c) => (
+            <div key={c.id} style={{ padding: '25px', borderRadius: '15px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, display: 'flex', gap: '20px' }}>
+              <div style={{ 
+                width: '45px', height: '45px', borderRadius: '50%', background: theme.accent, 
+                color: darkMode ? '#000' : '#fff', display: 'flex', alignItems: 'center', 
+                justifyContent: 'center', fontWeight: 800, fontSize: '0.9rem', flexShrink: 0
+              }}>
+                {c.user_name.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 700, color: theme.accent, fontSize: '0.9rem' }}>{c.user_name}</span>
+                  <span style={{ fontSize: '0.7rem', color: theme.textMuted, fontWeight: 600 }}>{new Date(c.timestamp).toLocaleDateString()}</span>
+                </div>
+                <p style={{ margin: 0, color: theme.textMain, lineHeight: '1.6', fontSize: '0.95rem', opacity: 0.9 }}>{c.text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700;800&display=swap');
@@ -306,9 +289,8 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
 };
 
 const btnSmall = (darkMode, theme) => ({ 
-  padding: '8px 15px', cursor: 'pointer', borderRadius: '8px', 
-  border: `1px solid ${theme.border}`, backgroundColor: theme.card, 
-  color: theme.textMain, fontSize: '0.8rem', transition: '0.3s',
+  padding: '8px 15px', cursor: 'pointer', borderRadius: '8px', border: `1px solid ${theme.border}`, 
+  backgroundColor: theme.card, color: theme.textMain, fontSize: '0.8rem', transition: '0.3s',
   display: 'flex', alignItems: 'center', justifyContent: 'center'
 });
 

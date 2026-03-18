@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google'
 import { jwtDecode } from "jwt-decode"
+
 
 // Componentes y Páginas
 import BookReader from './pages/BookReader'
@@ -159,7 +160,45 @@ const CustomGoogleButton = ({ onSuccess, darkMode }) => {
   );
 };
 
+
+
+const ForceScrollToTop = () => {
+  const { pathname } = useLocation(); // Escuchar solo la ruta, no todo el objeto
+
+  useLayoutEffect(() => {
+    // 1. Apagar el comportamiento automático del navegador
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
+    // 2. Forzar scroll arriba instantáneamente
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    // 3. El truco maestro: Doble requestAnimationFrame. 
+    // Esto espera exactamente al frame donde el nuevo DOM ya tiene sus alturas reales.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, 0);
+      });
+    });
+
+  }, [pathname]); 
+
+  return null;
+};
+
+
+
+
 function App() {
+  //ocultar la barra de navegacion si se lee un capitulo en BookReader
+  const location = useLocation();
+  const isReaderRoute = location.pathname.startsWith('/reader'); 
+//////
+
+
   const [darkMode, setDarkMode] = useState(true);
   const [books, setBooks] = useState([]);
   const [featuredBooks, setFeaturedBooks] = useState([]);
@@ -265,53 +304,62 @@ const defaultCoverStyle = {
   textAlign: 'center'
 };
 
-  return (
+return (
     <GoogleOAuthProvider clientId="750793668642-7apu45i7te8b8gibnrelnhjgqj7vg512.apps.googleusercontent.com">
-      
+
+    <ForceScrollToTop />
+
       {showOnboarding && user && (
         <OnboardingModal user={user} onSave={handleSaveProfile} darkMode={darkMode} />
       )}
 
-      <div style={{ backgroundColor: theme.bg, color: theme.textMain, minHeight: '100vh', width: '100%', transition: 'all 0.4s ease', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ backgroundColor: theme.bg, color: theme.textMain, minHeight: '100vh', width: '100%', transition: 'background-color 0.4s ease, color 0.4s ease', fontFamily: "'Inter', sans-serif" }}>
         
-       {/* NAVBAR TIPO PÍLDORA FLOTANTE */}
-        <div style={{ position: 'sticky', top: '20px', zIndex: 1000, padding: '0 20px' }}>
-          <nav style={{ 
-            maxWidth: '1000px', margin: '0 auto', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-            backgroundColor: theme.navBg, border: `1px solid ${theme.border}`, padding: '12px 25px', 
-            borderRadius: '50px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            boxShadow: theme.shadow 
-          }}>
-            <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
-              <Link to="/" style={{ color: theme.textMain, textDecoration: 'none', fontWeight: 800, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Crimson Pro', serif" }}>
-                <span style={{ color: theme.accent }}>✦</span> HISPANO
-              </Link>
-              <div style={{ display: 'flex', gap: '20px' }}>
-                <Link to="/rankings" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7, transition: '0.3s' }}>Rankings</Link>
-                <Link to="/search" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7, transition: '0.3s' }}>Explorar</Link>
-                {user && (
-                  <>
-                    <Link to="/library" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7 }}>Mi Biblioteca</Link>
-                    <Link to="/dashboard" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7 }}>Mi Studio</Link>
-                  </>
-                )}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-              {!user ? <CustomGoogleButton onSuccess={handleLoginSuccess} darkMode={darkMode} /> : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderRight: `1px solid ${theme.border}`, paddingRight: '15px' }}>
-                  <img src={user.picture} alt="profile" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
-                  <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: theme.textMuted, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>Salir</button>
+        {/* NAVBAR TIPO PÍLDORA FLOTANTE - Solo se muestra si NO estás leyendo */}
+        {!isReaderRoute && (
+          <div style={{ position: 'sticky', top: '20px', zIndex: 1000, padding: '0 20px' }}>
+            <nav style={{ 
+              maxWidth: '1000px', margin: '0 auto', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+              backgroundColor: theme.navBg, border: `1px solid ${theme.border}`, padding: '12px 25px', 
+              borderRadius: '50px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              boxShadow: theme.shadow 
+            }}>
+              <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
+                <Link to="/" style={{ color: theme.textMain, textDecoration: 'none', fontWeight: 800, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Crimson Pro', serif" }}>
+                  <span style={{ color: theme.accent }}>✦</span> HISPANO
+                </Link>
+                <div style={{ display: 'flex', gap: '20px' }}>
+                  <Link to="/rankings" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7, transition: '0.3s' }}>Rankings</Link>
+                  <Link to="/search" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7, transition: '0.3s' }}>Explorar</Link>
+                  {user && (
+                    <>
+                      <Link to="/library" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7 }}>Mi Biblioteca</Link>
+                      <Link to="/dashboard" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7 }}>Mi Studio</Link>
+                    </>
+                  )}
                 </div>
-              )}
-              <button className="mode-toggle" onClick={() => setDarkMode(!darkMode)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', display: 'flex' }}>
-                {darkMode ? '☀️' : '🌙'}
-              </button>
-            </div>
-          </nav>
-        </div>
+              </div>
+              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                {!user ? <CustomGoogleButton onSuccess={handleLoginSuccess} darkMode={darkMode} /> : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderRight: `1px solid ${theme.border}`, paddingRight: '15px' }}>
+                    <img src={user.picture} alt="profile" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                    <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: theme.textMuted, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>Salir</button>
+                  </div>
+                )}
+                <button className="mode-toggle" onClick={() => setDarkMode(!darkMode)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', display: 'flex' }}>
+                  {darkMode ? '☀️' : '🌙'}
+                </button>
+              </div>
+            </nav>
+          </div>
+        )}
 
-        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px' }}>
+        {/* CONTENEDOR DE RUTAS - Ajustado para modo lectura inmersivo */}
+        <div style={{ 
+          maxWidth: isReaderRoute ? '100%' : '1100px', 
+          margin: '0 auto', 
+          padding: isReaderRoute ? '0' : '0 20px' 
+        }}>
           <Routes>
             <Route path="/" element={
               <main style={{ paddingTop: '80px' }}>

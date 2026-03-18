@@ -10,50 +10,45 @@ const EditChapter = ({ darkMode }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Estilos basados en tu sistema de diseño
+  // ARMONIZACIÓN: Usando los mismos colores de tu App.js
   const theme = {
-    card: darkMode ? '#1a1d23' : '#fff',
-    text: darkMode ? '#eee' : '#222',
-    border: darkMode ? '#333' : '#eee',
-    accent: '#3498db',
-    input: darkMode ? '#2d2d2d' : '#f9f9f9',
+    bg: darkMode ? '#0a0b10' : '#f4f0ea',
+    card: darkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.7)',
+    accent: darkMode ? '#d4af37' : '#b85b3f', // Oro / Terracota
+    textMain: darkMode ? '#e3e1db' : '#2b2824',
+    textMuted: darkMode ? '#8a8782' : '#857f77',
+    border: darkMode ? 'rgba(212, 175, 55, 0.2)' : 'rgba(184, 91, 63, 0.2)',
+    inputBg: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)',
   };
 
-useEffect(() => {
-  // 1. Necesitamos el capítulo específico. 
-  // Usamos el ID del capítulo que viene en la URL
-  fetch(`http://127.0.0.1:5001/api/chapters/${chapterId}`) 
-    .then(res => {
-      if (!res.ok) throw new Error("No se encontró el capítulo");
-      return res.json();
-    })
-    .then(data => {
-      // 'data' ya debería ser el objeto del capítulo
-      setTitle(data.title);
-      setContent(data.content);
-      setLoading(false);
-    })
-    .catch(err => {
-      console.error("Error cargando capítulo:", err);
-      alert("No se pudo cargar el capítulo.");
-      setLoading(false);
-    });
-}, [chapterId]);
+  useEffect(() => {
+    fetch(`http://127.0.0.1:5001/api/chapters/${chapterId}`) 
+      .then(res => {
+        if (!res.ok) throw new Error("No se encontró el capítulo");
+        return res.json();
+      })
+      .then(data => {
+        setTitle(data.title);
+        setContent(data.content);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Error cargando capítulo:", err);
+        setLoading(false);
+      });
+  }, [chapterId]);
 
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
-
     try {
       const res = await fetch(`http://127.0.0.1:5001/api/chapters/${chapterId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, content })
       });
-
       if (res.ok) {
-        alert("Capítulo actualizado con éxito");
-        navigate(-1); // Volver atrás
+        navigate(-1);
       }
     } catch (err) {
       alert("Error al guardar");
@@ -62,58 +57,100 @@ useEffect(() => {
     }
   };
 
-  if (loading) return <div style={{textAlign: 'center', padding: '50px', color: theme.text}}>Cargando editor...</div>;
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+      <div className="spinner"></div> {/* Reutiliza tu clase spinner de App.css */}
+    </div>
+  );
 
   return (
-    <div style={{ maxWidth: '900px', margin: '40px auto', padding: '0 20px', color: theme.text }}>
+    <div style={{ 
+      maxWidth: '900px', 
+      margin: '0 auto', 
+      padding: '120px 20px 60px 20px', // Padding superior para no chocar con la píldora
+      color: theme.textMain,
+      fontFamily: "'Inter', sans-serif"
+    }}>
+      
       <button 
         onClick={() => navigate(-1)} 
-        style={{ background: 'none', border: 'none', color: theme.accent, cursor: 'pointer', marginBottom: '20px', fontWeight: 'bold' }}
+        style={{ 
+          background: 'none', border: 'none', color: theme.textMuted, 
+          cursor: 'pointer', marginBottom: '30px', fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: '8px', transition: '0.3s'
+        }}
+        onMouseOver={(e) => e.target.style.color = theme.accent}
+        onMouseOut={(e) => e.target.style.color = theme.textMuted}
       >
-        ← Cancelar y Volver
+        ← Volver al panel
       </button>
 
-      <div style={{ backgroundColor: theme.card, padding: '30px', borderRadius: '15px', border: `1px solid ${theme.border}` }}>
-        <h2 style={{ marginTop: 0, color: theme.accent }}>Editar Capítulo</h2>
+      <div style={{ 
+        backgroundColor: theme.card, 
+        padding: '40px', 
+        borderRadius: '24px', 
+        border: `1px solid ${theme.border}`,
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+      }}>
+        
+        <header style={{ marginBottom: '40px' }}>
+          <h2 style={{ 
+            fontFamily: "'Crimson Pro', serif", 
+            fontSize: '2.2rem', 
+            margin: 0,
+            color: theme.accent 
+          }}>Editar Capítulo</h2>
+          <p style={{ color: theme.textMuted, fontSize: '0.9rem' }}>Refina tu historia y mantén a tus lectores enganchados.</p>
+        </header>
         
         <form onSubmit={handleSave}>
-          <label style={labelStyle}>Título del Capítulo</label>
-          <input 
-            style={{ ...inputStyle, backgroundColor: theme.input, color: theme.text, border: `1px solid ${theme.border}` }}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
+          <div style={{ marginBottom: '25px' }}>
+            <label style={labelStyle(theme)}>TÍTULO DEL CAPÍTULO</label>
+            <input 
+              style={inputStyle(theme)}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ej: El inicio del fin..."
+              required
+            />
+          </div>
 
-          <label style={labelStyle}>Contenido</label>
-          <textarea 
-            style={{ 
-              ...inputStyle, 
-              backgroundColor: theme.input, 
-              color: theme.text, 
-              border: `1px solid ${theme.border}`,
-              height: '400px',
-              fontFamily: 'serif',
-              fontSize: '1.1rem',
-              lineHeight: '1.6'
-            }}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-          />
+          <div style={{ marginBottom: '25px' }}>
+            <label style={labelStyle(theme)}>CONTENIDO DE LA OBRA</label>
+            <textarea 
+              style={{ 
+                ...inputStyle(theme), 
+                height: '500px',
+                fontFamily: "'Crimson Pro', serif",
+                fontSize: '1.25rem',
+                lineHeight: '1.7',
+                resize: 'vertical',
+                padding: '20px'
+              }}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              required
+            />
+          </div>
 
-          <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+          <div style={{ display: 'flex', gap: '15px', marginTop: '30px' }}>
             <button 
               type="submit" 
               disabled={saving}
-              style={{ ...btnStyle, opacity: saving ? 0.7 : 1 }}
+              style={{ 
+                ...btnStyle(theme, true),
+                opacity: saving ? 0.6 : 1,
+                cursor: saving ? 'not-allowed' : 'pointer'
+              }}
             >
-              {saving ? 'Guardando...' : '💾 Guardar Cambios'}
+              {saving ? 'Guardando...' : 'Guardar Cambios'}
             </button>
             <button 
               type="button" 
               onClick={() => navigate(-1)}
-              style={{ ...btnStyle, backgroundColor: '#7f8c8d' }}
+              style={btnStyle(theme, false)}
             >
               Descartar
             </button>
@@ -124,9 +161,41 @@ useEffect(() => {
   );
 };
 
-// Reutilizando tus estilos
-const labelStyle = { display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' };
-const inputStyle = { width: '100%', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' };
-const btnStyle = { padding: '12px 25px', borderRadius: '8px', border: 'none', backgroundColor: '#3498db', color: 'white', fontWeight: 'bold', cursor: 'pointer' };
+// Estilos dinámicos para mantener la armonía
+const labelStyle = (theme) => ({
+  display: 'block', 
+  marginBottom: '10px', 
+  fontSize: '0.75rem', 
+  fontWeight: 800, 
+  letterSpacing: '1.5px',
+  color: theme.accent,
+  opacity: 0.8
+});
+
+const inputStyle = (theme) => ({
+  width: '100%', 
+  padding: '15px', 
+  borderRadius: '12px', 
+  backgroundColor: theme.inputBg, 
+  color: theme.textMain, 
+  border: `1px solid ${theme.border}`,
+  fontSize: '1rem', 
+  outline: 'none', 
+  boxSizing: 'border-box',
+  transition: 'border-color 0.3s ease'
+});
+
+const btnStyle = (theme, isPrimary) => ({
+  padding: '14px 30px', 
+  borderRadius: '12px', 
+  border: isPrimary ? 'none' : `1px solid ${theme.border}`, 
+  backgroundColor: isPrimary ? theme.accent : 'transparent', 
+  color: isPrimary ? (theme.bg === '#0a0b10' ? '#000' : '#fff') : theme.textMain, 
+  fontWeight: 700, 
+  fontSize: '0.9rem',
+  cursor: 'pointer',
+  transition: 'all 0.3s ease',
+  flex: 1
+});
 
 export default EditChapter;

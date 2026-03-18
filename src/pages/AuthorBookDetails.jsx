@@ -116,7 +116,7 @@ const AuthorBookDetails = ({ user, darkMode }) => {
           <p style={{ color: theme.textMuted, fontSize: '1.1rem', maxWidth: '600px', margin: '15px 0' }}>{book.description?.substring(0, 180)}...</p>
           
           <div style={{ display: 'flex', gap: '12px', marginTop: '25px' }}>
-            <button onClick={() => navigate(`/add-chapter/${id}`)} style={{ padding: '12px 25px', borderRadius: '50px', border: 'none', backgroundColor: theme.accent, color: darkMode ? '#000' : '#fff', fontWeight: 700, cursor: 'pointer', boxShadow: `0 10px 20px ${theme.accent}30` }}>
+            <button onClick={() => navigate(`/add-chapter/${id}`)} style={{ padding: '12px 25px', borderRadius: '50px', border: 'none', backgroundColor: theme.accent, color: darkMode ? '#000' : '#fff', fontWeight: 700, cursor: 'pointer', boxShadow: `none` }}>
               ✦ AÑADIR CAPÍTULO
             </button>
             <button onClick={() => setShowEditModal(true)} style={{ padding: '12px 25px', borderRadius: '50px', border: `1px solid ${theme.border}`, backgroundColor: 'transparent', color: theme.textMain, fontWeight: 600, cursor: 'pointer' }}>
