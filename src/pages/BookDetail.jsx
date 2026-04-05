@@ -21,6 +21,9 @@ const BookDetail = ({ user, darkMode }) => {
   // --- NUEVO: ESTADO PARA EL PROGRESO DE LECTURA (PERSISTENTE) ---
   const [progress, setProgress] = useState({ lastChapterIndex: -1, readChapters: [] });
 
+  //barra de progreso
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+
   const theme = {
     accent: darkMode ? '#d4af37' : '#b85b3f', // Oro en dark, Tierra en light
     textMain: darkMode ? '#e3e1db' : '#2c2926',
@@ -246,12 +249,7 @@ const BookDetail = ({ user, darkMode }) => {
 
           <p style={{ lineHeight: '1.8', fontSize: '1.1rem', color: theme.textMuted, marginBottom: '40px', maxWidth: '600px' }}>{book.description}</p>
           
-          {chapters.length > 0 && (
-            <Link to={`/reader/${book.id}/${progress.lastChapterIndex !== -1 ? progress.lastChapterIndex : 0}`} 
-              style={{ background: theme.accent, color: darkMode ? '#000' : '#fff', padding: '16px 45px', borderRadius: '50px', textDecoration: 'none', fontWeight: 800, fontSize: '0.9rem', display: 'inline-block', boxShadow: `0 10px 20px ${theme.accent}33` }}>
-              {progress.lastChapterIndex !== -1 ? "CONTINUAR LEYENDO" : "COMENZAR LECTURA"}
-            </Link>
-          )}
+
         </div>
       </div>
 
@@ -304,14 +302,92 @@ const BookDetail = ({ user, darkMode }) => {
           <div style={{ display: 'flex', gap: '30px', marginBottom: '30px', flexWrap: 'wrap' }}>
             <div style={{ flex: 1 }}>
               <label style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.textMuted, display: 'block', marginBottom: '10px' }}>PROGRESO</label>
-              <select value={readingStatus} onChange={(e) => setReadingStatus(e.target.value)}
-                style={{ width: '100%', padding: '14px', borderRadius: '10px', background: theme.bgLight, color: theme.textMain, border: `1px solid ${theme.border}`, fontSize: '0.9rem', outline: 'none' }}>
-                <option value="">-- Seleccionar progreso --</option>
-                <option value="Completada">Obra completada</option>
-                <option value="Leyendo actualmente">Leyendo actualmente</option>
-                {chapters.map((ch, i) => <option key={i} value={`Capítulo ${i + 1}`}>Capítulo {i + 1}</option>)}
-                <option value="Abandonada">Abandonada</option>
-              </select>
+<div style={{ flex: 1, position: 'relative' }}>
+  <label style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.textMuted, display: 'block', marginBottom: '10px', letterSpacing: '1px' }}>
+    PROGRESO DE LECTURA
+  </label>
+  
+  {/* Botón del Dropdown */}
+  <div 
+    onClick={() => setIsStatusOpen(!isStatusOpen)}
+    style={{ 
+      width: '100%', 
+      padding: '14px 20px', 
+      borderRadius: '12px', 
+      background: theme.bgLight, 
+      color: readingStatus ? theme.textMain : theme.textMuted, 
+      border: `1px solid ${isStatusOpen ? theme.accent : theme.border}`, 
+      fontSize: '0.9rem', 
+      cursor: 'pointer',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      transition: '0.3s'
+    }}
+  >
+    <span>{readingStatus || "Seleccionar progreso..."}</span>
+    <span style={{ 
+      fontSize: '0.6rem', 
+      transform: isStatusOpen ? 'rotate(180deg)' : 'rotate(0)', 
+      transition: '0.3s',
+      color: theme.accent 
+    }}>▼</span>
+  </div>
+
+  {/* Menú Desplegable Armonizado */}
+  {isStatusOpen && (
+    <>
+      {/* Overlay invisible para cerrar al hacer clic fuera */}
+      <div 
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }} 
+        onClick={() => setIsStatusOpen(false)} 
+      />
+      
+      <div style={{ 
+        position: 'absolute', 
+        top: '105%', 
+        left: 0, 
+        right: 0, 
+        background: darkMode ? '#1e1e1e' : '#fff', 
+        border: `1px solid ${theme.accent}`, 
+        borderRadius: '12px', 
+        boxShadow: '0 10px 30px rgba(0,0,0,0.3)', 
+        zIndex: 11, 
+        maxHeight: '250px', 
+        overflowY: 'auto',
+        animation: 'slideInSmall 0.2s ease-out'
+      }}>
+        {[
+          "Obra completada",
+          "Leyendo actualmente",
+          "Abandonada",
+          ...chapters.map((_, i) => `Capítulo ${i + 1}`)
+        ].map((option) => (
+          <div
+            key={option}
+            onClick={() => {
+              setReadingStatus(option);
+              setIsStatusOpen(false);
+            }}
+            style={{ 
+              padding: '12px 20px', 
+              cursor: 'pointer', 
+              fontSize: '0.9rem',
+              color: readingStatus === option ? theme.accent : theme.textMain,
+              background: readingStatus === option ? (darkMode ? 'rgba(212,175,55,0.1)' : 'rgba(184,91,63,0.05)') : 'transparent',
+              transition: '0.2s',
+              borderBottom: `1px solid ${theme.border}33`
+            }}
+            onMouseEnter={(e) => e.target.style.background = darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'}
+            onMouseLeave={(e) => e.target.style.background = readingStatus === option ? (darkMode ? 'rgba(212,175,55,0.1)' : 'rgba(184,91,63,0.05)') : 'transparent'}
+          >
+            {option}
+          </div>
+        ))}
+      </div>
+    </>
+  )}
+</div>
             </div>
             <div style={{ flex: 1 }}>
               <label style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.textMuted, display: 'block', marginBottom: '10px' }}>TU CALIFICACIÓN</label>

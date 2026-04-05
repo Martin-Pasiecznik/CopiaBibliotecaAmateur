@@ -326,7 +326,7 @@ return (
             }}>
               <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
                 <Link to="/" style={{ color: theme.textMain, textDecoration: 'none', fontWeight: 800, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Crimson Pro', serif" }}>
-                  <span style={{ color: theme.accent }}>✦</span> HISPANO
+                  <span style={{ color: theme.accent }}>✦</span> Libreria Amateur
                 </Link>
                 <div style={{ display: 'flex', gap: '20px' }}>
                   <Link to="/rankings" style={{ color: theme.textMain, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7, transition: '0.3s' }}>Rankings</Link>
@@ -365,20 +365,60 @@ return (
               <main style={{ paddingTop: '80px' }}>
                 
                 {/* CABECERA EDITORIAL CON HALO DE LUZ */}
-                <header style={{ marginBottom: '80px', textAlign: 'center', position: 'relative' }}>
-                  <div className="ambient-glow" style={{ background: `radial-gradient(circle, ${theme.accent}25 0%, transparent 60%)` }}></div>
-                  <p style={{ color: theme.accent, fontSize: '0.85rem', fontWeight: 800, letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '15px' }}>
-                    Comunidad Literaria
-                  </p>
-                  <h1 style={{ fontSize: '3.8rem', fontWeight: 400, marginBottom: '20px', lineHeight: 1.1, letterSpacing: '-1px' }}>
-                    El lugar donde <br/>
-                    <span style={{ fontStyle: 'italic', color: theme.accent, paddingRight: '10px' }}>todo autor</span> 
-                    tiene visibilidad.
-                  </h1>
-                  <p style={{ color: theme.textMuted, fontSize: '1.15rem', maxWidth: '500px', margin: '0 auto', fontWeight: 400, lineHeight: 1.6 }}>
-                    Explora historias únicas, escritas desde el alma y compartidas con el mundo. Tu próxima lectura favorita está aquí.
-                  </p>
-                </header>
+<header style={{ 
+  marginBottom: '100px', 
+  textAlign: 'center', 
+  padding: '0 20px',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center'
+}}>
+  {/* Subtítulo minimalista */}
+  <p style={{ 
+    color: theme.accent, 
+    fontSize: '0.75rem', 
+    fontWeight: 600, 
+    letterSpacing: '0.4em', 
+    textTransform: 'uppercase', 
+    marginBottom: '24px',
+    opacity: 0.8
+  }}>
+    Comunidad Literaria
+  </p>
+
+  {/* Título Principal */}
+  <h1 style={{ 
+    fontSize: 'clamp(2.2rem, 6vw, 4.2rem)', 
+    fontWeight: 300, // Un peso más ligero lo hace ver más sofisticado
+    lineHeight: 1.1, 
+    maxWidth: '900px', 
+    margin: '0 auto',
+    color: theme.textMain,
+    letterSpacing: '-0.03em'
+  }}>
+    El lugar donde{' '}
+    <span style={{ 
+      fontFamily: "'Cormorant Garamond', serif", // Tipografía elegante
+      fontStyle: 'italic', 
+      color: theme.accent,
+      fontWeight: 800,
+      padding: '0 4px', // Un pequeño respiro lateral
+      display: 'inline-block' 
+    }}>
+      todo Autor
+    </span>{' '}
+    tiene visibilidad.
+  </h1>
+
+  {/* Opcional: Una línea divisoria muy sutil para armonizar el final del header */}
+  <div style={{ 
+    width: '40px', 
+    height: '1px', 
+    background: theme.accent, 
+    marginTop: '40px',
+    opacity: 0.4 
+  }}></div>
+</header>
 
                 {featuredBooks.length > 0 && (
                   <section style={{ marginBottom: '60px' }}>
@@ -389,13 +429,13 @@ return (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px' }}>
                       {featuredBooks.map(book => (
                         <Link key={`feat-${book.id}`} to={`/book/${book.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                          <div className="book-card-featured" style={{ backgroundColor: theme.card, padding: '10px', borderRadius: '12px', border: `1px solid ${theme.border}` }}>
+                          <div className="book-card-featured" style={{ backgroundColor: theme.card, padding: '15px', borderRadius: '12px', border: `1px solid ${theme.border}` }}>
                             {book.author_note && book.author_note !== 'null' ? (
                                 <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} alt={book.title} style={{ width: '100%', aspectRatio: '2/3', borderRadius: '8px', objectFit: 'cover' }} />
                             ) : (
                                 <div style={defaultCoverStyle}>SIN IMAGEN</div>
                             )}
-                            <h3 style={{ margin: '10px 0 0 0', fontSize: '0.9rem', fontWeight: 700 }}>{book.title}</h3>
+                            <h3 style={{ margin: '15px 0 0 0', fontSize: '0.9rem', fontWeight: 700, textAlign: 'center' }}>{book.title}</h3>
                           </div>
                         </Link>
                       ))}
@@ -409,15 +449,15 @@ return (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '40px' }}>
                       {books.map(book => (
                         <Link key={book.id} to={`/book/${book.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                          <div className="book-card">
-                            <div style={{ width: '100%', aspectRatio: '2/3', backgroundColor: '#222', borderRadius: '4px', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div className="book-card" style={{ padding: '15px' }}>
+                            <div style={{ width: '100%', aspectRatio: '2/3', backgroundColor: '#222', borderRadius: '8px', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                {book.author_note && book.author_note !== 'null' ? (
                                    <img src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} alt={book.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                ) : (
                                    <div style={{ ...defaultCoverStyle, border: 'none' }}>SIN IMAGEN</div>
                                )}
                             </div>
-                            <h3 style={{ margin: '10px 0 4px 0', fontSize: '1.05rem', fontWeight: 700 }}>{book.title}</h3>
+                            <h3 style={{ margin: '15px 0 4px 0', fontSize: '1.05rem', fontWeight: 700, textAlign: 'center' }}>{book.title}</h3>
                           </div>
                         </Link>
                       ))}
@@ -465,7 +505,7 @@ return (
       </div>
 
 <style>{`
-  @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&family=Cormorant+Garamond:ital,wght@1,600&display=swap');
 
   * { 
     margin: 0; 
@@ -503,25 +543,20 @@ return (
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid ${theme.border} !important;
     position: relative;
-    padding-top: 20px !important; /* Espacio para que flote la portada */
+    overflow: hidden;
   }
 
-  /* Efecto de Portada Flotante */
+  /* Portada Estática */
   .book-card > div:first-child, .book-card-featured > img, .book-card-featured > div:first-child {
-    transform: translateY(-15px) scale(0.95);
-    border-radius: 12px !important;
-    box-shadow: 0 15px 25px rgba(0,0,0,0.3);
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 8px !important;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    transition: box-shadow 0.4s ease;
   }
 
-  .book-card:hover > div:first-child, .book-card-featured:hover > img {
-    transform: translateY(-25px) scale(1);
-    box-shadow: 0 20px 30px rgba(0,0,0,0.4);
-  }
-
-  /* Animaciones suaves al pasar el mouse */
-  .book-card:hover, .recent-item:hover { 
+  /* Brillo en el recuadro al pasar el mouse */
+  .book-card:hover, .book-card-featured:hover, .recent-item:hover { 
     border-color: ${theme.accent} !important; 
+    box-shadow: 0 0 15px ${theme.accent}33;
   }
   
   .mode-toggle { transition: transform 0.5s ease; }

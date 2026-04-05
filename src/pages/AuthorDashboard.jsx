@@ -48,7 +48,7 @@ const AuthorDashboard = ({ user, darkMode }) => {
             fontFamily: "'Crimson Pro', serif", 
             fontWeight: 400 
           }}>
-            Bienvenido a tu <span style={{ fontStyle: 'italic', color: theme.accent }}>Studio</span>
+            Bienvenido a tu <span style={{ fontStyle: 'italic', color: theme.accent }}>Estudio</span>
           </h1>
           <p style={{ color: theme.textMuted, marginTop: '10px', fontSize: '1.1rem' }}>
             {user.given_name}, aquí nace tu próximo legado.
@@ -65,7 +65,7 @@ const AuthorDashboard = ({ user, darkMode }) => {
           boxShadow: `none`,
           transition: 'transform 0.3s ease'
         }}
-        onMouseOver={e => e.currentTarget.style.transform = 'translateY(-3px)'}
+        onMouseOver={e => e.currentTarget.style.transform = 'translateY(-1px)'}
         onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
         >
           ✦ CREAR NUEVA OBRA
@@ -140,9 +140,6 @@ const AuthorDashboard = ({ user, darkMode }) => {
                       <span style={{ fontSize: '0.8rem', color: theme.textMuted, fontWeight: 600 }}>
                         <span style={{ color: theme.accent }}>✦</span> {book.views} LECTURAS
                       </span>
-                      <span style={{ fontSize: '0.8rem', color: theme.textMuted }}>
-                        ID: #{book.id}
-                      </span>
                     </div>
                  </div>
               </div>
@@ -196,13 +193,7 @@ const AuthorDashboard = ({ user, darkMode }) => {
         </div>
       )}
 
-      <style>{`
-        .dashboard-card:hover {
-          transform: translateX(10px);
-          border-color: ${theme.accent}50 !important;
-          background: ${darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.9)'} !important;
-        }
-      `}</style>
+
     </div>
   );
 };

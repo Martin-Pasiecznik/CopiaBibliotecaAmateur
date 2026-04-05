@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  AreaChart, Area 
+  AreaChart, Area, PieChart, Pie, Cell 
 } from 'recharts';
 
 const AuthorBookDetails = ({ user, darkMode }) => {
@@ -10,13 +10,12 @@ const AuthorBookDetails = ({ user, darkMode }) => {
   const navigate = useNavigate();
   const [book, setBook] = useState(null);
   const [chapters, setChapters] = useState([]);
+  const [stats, setStats] = useState({ reading: 0, pending: 0, completed: 0, dropped: 0 }); // NUEVO
   const [loading, setLoading] = useState(true);
   
   const [showEditModal, setShowEditModal] = useState(false);
   const [editData, setEditData] = useState({ title: '', description: '', tags: '' });
   const [newCover, setNewCover] = useState(null);
-
-  const suggestedTags = ["Fantasía", "Romance", "Aventura", "Terror", "Ciencia Ficción", "Misterio", "Drama", "Acción", "Suspenso", "Histórico"];
 
   const theme = {
     bg: darkMode ? '#0a0b10' : '#f4f0ea',
@@ -25,24 +24,50 @@ const AuthorBookDetails = ({ user, darkMode }) => {
     textMain: darkMode ? '#e3e1db' : '#2b2824',
     textMuted: darkMode ? '#8a8782' : '#857f77',
     border: darkMode ? 'rgba(212, 175, 55, 0.15)' : 'rgba(184, 91, 63, 0.15)',
-    input: darkMode ? '#11131a' : '#fff'
+    input: darkMode ? '#11131a' : '#fff',
+    chartColors: [darkMode ? '#d4af37' : '#b85b3f', '#2ecc71', '#e74c3c', '#9b59b6']
   };
 
+const loadData = async () => {
+    try {
+      setLoading(true);
+
+      const [resBook, resChapters, resStats] = await Promise.all([
+        fetch(`http://127.0.0.1:5001/api/books/${id}`),
+        fetch(`http://127.0.0.1:5001/api/books/${id}/chapters`),
+        fetch(`http://127.0.0.1:5001/api/books/${id}/library-stats`)
+      ]);
+
+      if (!resBook.ok) throw new Error("No se pudo cargar el libro principal");
+
+      const bookData = await resBook.json();
+      const chaptersData = resChapters.ok ? await resChapters.json() : [];
+      
+      // Manejo seguro para las estadísticas: si da 404, usamos ceros por defecto
+      let statsData = { reading: 0, pending: 0, completed: 0, dropped: 0 };
+      if (resStats.ok) {
+        statsData = await resStats.json();
+      } else {
+        console.warn("Ruta de stats no encontrada (404). Usando ceros.");
+      }
+
+      setBook(bookData);
+      setChapters(chaptersData);
+      setStats(statsData);
+      setEditData({ title: bookData.title, description: bookData.description, tags: bookData.tags || "" });
+
+    } catch (err) {
+      console.error("Error crítico cargando datos:", err);
+    } finally {
+      // 2. PASE LO QUE PASE, quitamos la pantalla de "Analizando manuscrito..."
+      setLoading(false);
+    }
+  };
+
+  // 3. DESPUÉS llamamos a la función en el useEffect
   useEffect(() => {
     loadData();
   }, [id]);
-
-  const loadData = () => {
-    Promise.all([
-      fetch(`http://127.0.0.1:5001/api/books/${id}`).then(res => res.json()),
-      fetch(`http://127.0.0.1:5001/api/books/${id}/chapters`).then(res => res.json())
-    ]).then(([bookData, chaptersData]) => {
-      setBook(bookData);
-      setChapters(chaptersData);
-      setEditData({ title: bookData.title, description: bookData.description, tags: bookData.tags || "" });
-      setLoading(false);
-    });
-  };
 
   const handleUpdateBook = async (e) => {
     e.preventDefault();
@@ -63,13 +88,23 @@ const AuthorBookDetails = ({ user, darkMode }) => {
     }
   };
 
-  if (loading) return <div style={{padding: '100px', textAlign: 'center', color: theme.accent}}>Analizando manuscrito...</div>;
+  if (loading) return <div style={{padding: '100px', textAlign: 'center', color: theme.accent, backgroundColor: theme.bg, minHeight: '100vh'}}>Analizando manuscrito...</div>;
 
+  // Datos para los gráficos
   const chartData = chapters.map((cap, index) => ({
     name: `Cap ${index + 1}`,
     palabras: cap.word_count || 0,
     vistas: Math.round(book.views / (index + 1.2)) 
   }));
+
+  const pieData = [
+    { name: 'Leyendo', value: stats.reading },
+    { name: 'Pendiente', value: stats.pending },
+    { name: 'Completado', value: stats.completed },
+    { name: 'Abandonado', value: stats.dropped },
+  ].filter(d => d.value > 0); // Solo mostrar si hay datos
+
+  const totalInLibrary = stats.reading + stats.pending + stats.completed + stats.dropped;
 
   const EditModal = () => (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(8px)' }}>
@@ -92,72 +127,74 @@ const AuthorBookDetails = ({ user, darkMode }) => {
   );
 
   return (
-    <div style={{ padding: '40px 0', color: theme.textMain, fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ padding: '40px 0', color: theme.textMain, fontFamily: "'Inter', sans-serif", backgroundColor: theme.bg, minHeight: '100vh' }}>
       {showEditModal && <EditModal />}
       
-      <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: theme.textMuted, cursor: 'pointer', marginBottom: '30px', fontWeight: 600, fontSize: '0.9rem' }}>
-        ← VOLVER AL STUDIO
-      </button>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
+        <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: theme.textMuted, cursor: 'pointer', marginBottom: '30px', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          ← VOLVER AL STUDIO
+        </button>
 
-      {/* HEADER TÉCNICO */}
-      <div style={{ display: 'flex', gap: '40px', marginBottom: '60px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative' }}>
-            <img 
-            src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} 
-            style={{ width: '180px', borderRadius: '12px', boxShadow: `0 20px 40px rgba(0,0,0,${darkMode ? '0.5' : '0.2'})`, border: `1px solid ${theme.border}` }}
-            alt="Portada"
-            onError={(e) => e.target.src = "https://placehold.jp/180x270.png?text=Sin+Portada"}
-            />
-            <div style={{ position: 'absolute', top: -10, left: -10, background: theme.accent, color: darkMode ? '#000' : '#fff', padding: '5px 12px', borderRadius: '5px', fontSize: '0.7rem', fontWeight: 800 }}>PRO</div>
-        </div>
-        
-        <div style={{ flex: 1 }}>
-          <h1 style={{ margin: 0, fontSize: '3rem', fontFamily: "'Crimson Pro', serif", fontWeight: 400 }}>{book.title}</h1>
-          <p style={{ color: theme.textMuted, fontSize: '1.1rem', maxWidth: '600px', margin: '15px 0' }}>{book.description?.substring(0, 180)}...</p>
+        {/* HEADER TÉCNICO */}
+        <div style={{ display: 'flex', gap: '40px', marginBottom: '60px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative' }}>
+              <img 
+              src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} 
+              style={{ width: '180px', height: '270px', objectFit: 'cover', borderRadius: '12px', boxShadow: `0 20px 40px rgba(0,0,0,${darkMode ? '0.5' : '0.2'})`, border: `1px solid ${theme.border}` }}
+              alt="Portada"
+              onError={(e) => e.target.src = "https://placehold.jp/180x270.png?text=Sin+Portada"}
+              />
+          </div>
           
-          <div style={{ display: 'flex', gap: '12px', marginTop: '25px' }}>
-            <button onClick={() => navigate(`/add-chapter/${id}`)} style={{ padding: '12px 25px', borderRadius: '50px', border: 'none', backgroundColor: theme.accent, color: darkMode ? '#000' : '#fff', fontWeight: 700, cursor: 'pointer', boxShadow: `none` }}>
-              ✦ AÑADIR CAPÍTULO
-            </button>
-            <button onClick={() => setShowEditModal(true)} style={{ padding: '12px 25px', borderRadius: '50px', border: `1px solid ${theme.border}`, backgroundColor: 'transparent', color: theme.textMain, fontWeight: 600, cursor: 'pointer' }}>
-              CONFIGURACIÓN
-            </button>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ margin: 0, fontSize: '3.5rem', fontFamily: "'Crimson Pro', serif", fontWeight: 400, lineHeight: 1 }}>{book.title}</h1>
+            <p style={{ color: theme.textMuted, fontSize: '1.1rem', maxWidth: '700px', margin: '20px 0', lineHeight: '1.6' }}>{book.description}</p>
+            
+            <div style={{ display: 'flex', gap: '12px', marginTop: '30px' }}>
+              <button onClick={() => navigate(`/add-chapter/${id}`)} style={{ padding: '14px 30px', borderRadius: '50px', border: 'none', backgroundColor: theme.accent, color: darkMode ? '#000' : '#fff', fontWeight: 700, cursor: 'pointer' }}>
+                ✦ AÑADIR CAPÍTULO
+              </button>
+              <button onClick={() => setShowEditModal(true)} style={{ padding: '14px 30px', borderRadius: '50px', border: `1px solid ${theme.border}`, backgroundColor: 'transparent', color: theme.textMain, fontWeight: 600, cursor: 'pointer' }}>
+                CONFIGURACIÓN
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* MÉTRICAS CLAVE */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '25px', marginBottom: '40px' }}>
-        <div style={{ padding: '30px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, textAlign: 'center', backdropFilter: 'blur(10px)' }}>
-          <span style={{ fontSize: '0.75rem', color: theme.textMuted, fontWeight: 800, letterSpacing: '1px' }}>LECTURAS TOTALES</span>
-          <h2 style={{ color: theme.accent, fontSize: '2.5rem', margin: '10px 0 0 0', fontFamily: "'Crimson Pro', serif" }}>{book.views}</h2>
-        </div>
-        <div style={{ padding: '30px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, textAlign: 'center', backdropFilter: 'blur(10px)' }}>
-          <span style={{ fontSize: '0.75rem', color: theme.textMuted, fontWeight: 800, letterSpacing: '1px' }}>VOLUMEN DE PALABRAS</span>
-          <h2 style={{ color: theme.textMain, fontSize: '2.5rem', margin: '10px 0 0 0', fontFamily: "'Crimson Pro', serif" }}>{chapters.reduce((acc, cap) => acc + (cap.word_count || 0), 0).toLocaleString()}</h2>
-        </div>
-        <div style={{ padding: '30px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, textAlign: 'center', backdropFilter: 'blur(10px)' }}>
-          <span style={{ fontSize: '0.75rem', color: theme.textMuted, fontWeight: 800, letterSpacing: '1px' }}>CAPÍTULOS</span>
-          <h2 style={{ color: theme.textMain, fontSize: '2.5rem', margin: '10px 0 0 0', fontFamily: "'Crimson Pro', serif" }}>{chapters.length}</h2>
-        </div>
-      </div>
-
-      {/* GRÁFICOS ANALÍTICOS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '30px', marginBottom: '50px' }}>
-        <div style={{ padding: '30px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}` }}>
-          <h4 style={{ marginBottom: '25px', color: theme.textMuted, fontSize: '0.9rem', fontWeight: 700, letterSpacing: '1px' }}>EXTENSIÓN POR CAPÍTULO</h4>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={theme.border} vertical={false} />
-              <XAxis dataKey="name" stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
-              <YAxis stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
-              <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ backgroundColor: theme.bg, border: `1px solid ${theme.border}`, borderRadius: '10px', fontSize: '12px' }} />
-              <Bar dataKey="palabras" fill={theme.accent} radius={[5, 5, 0, 0]} barSize={30} />
-            </BarChart>
-          </ResponsiveContainer>
+        {/* MÉTRICAS CLAVE */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}>
+          {[
+            { label: 'VISTAS TOTALES', value: book.views, color: theme.accent },
+            { label: 'EN BIBLIOTECAS', value: totalInLibrary, color: theme.textMain },
+            { label: 'PALABRAS', value: chapters.reduce((acc, cap) => acc + (cap.word_count || 0), 0).toLocaleString(), color: theme.textMain },
+            { label: 'CAPÍTULOS', value: chapters.length, color: theme.textMain }
+          ].map((stat, i) => (
+            <div key={i} style={{ padding: '25px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, textAlign: 'center' }}>
+              <span style={{ fontSize: '0.7rem', color: theme.textMuted, fontWeight: 800, letterSpacing: '1.5px' }}>{stat.label}</span>
+              <h2 style={{ color: stat.color, fontSize: '2.2rem', margin: '10px 0 0 0', fontFamily: "'Crimson Pro', serif" }}>{stat.value}</h2>
+            </div>
+          ))}
         </div>
 
-        <div style={{ padding: '30px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}` }}>
+        {/* ANALÍTICA AVANZADA */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px', marginBottom: '50px' }}>
+          
+          {/* Gráfico de Barras */}
+          <div style={{ padding: '30px', borderRadius: '25px', backgroundColor: theme.card, border: `1px solid ${theme.border}` }}>
+            <h4 style={{ marginBottom: '25px', color: theme.textMuted, fontSize: '0.8rem', fontWeight: 800, letterSpacing: '1px' }}>EXTENSIÓN POR CAPÍTULO</h4>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={theme.border} vertical={false} />
+                <XAxis dataKey="name" stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
+                <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ backgroundColor: darkMode ? '#111' : '#fff', border: `1px solid ${theme.border}`, borderRadius: '10px' }} />
+                <Bar dataKey="palabras" fill={theme.accent} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* grafico de lecturas */}
+          <div style={{ padding: '30px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}` }}>
           <h4 style={{ marginBottom: '25px', color: theme.textMuted, fontSize: '0.9rem', fontWeight: 700, letterSpacing: '1px' }}>RETENCIÓN DE LECTORES</h4>
           <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={chartData}>
@@ -174,40 +211,79 @@ const AuthorBookDetails = ({ user, darkMode }) => {
               <Area type="monotone" dataKey="vistas" stroke={theme.accent} strokeWidth={3} fillOpacity={1} fill="url(#colorVis)" />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
-      </div>
+          </div>        
 
-      {/* ÍNDICE DE MANUSCRITO */}
-      <div style={{ backgroundColor: theme.card, borderRadius: '20px', overflow: 'hidden', border: `1px solid ${theme.border}`, backdropFilter: 'blur(10px)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: `2px solid ${theme.border}`, textAlign: 'left' }}>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: theme.textMuted }}>ORDEN</th>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: theme.textMuted }}>TÍTULO DEL CAPÍTULO</th>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: theme.textMuted }}>PALABRAS</th>
-              <th style={{ padding: '20px', fontSize: '0.8rem', color: theme.textMuted }}>ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody>
-            {chapters.map((cap, index) => (
-              <tr key={cap.id} style={{ borderBottom: `1px solid ${theme.border}`, transition: 'background 0.3s' }} className="table-row">
-                <td style={{ padding: '20px', fontWeight: 700, opacity: 0.5 }}>{String(index + 1).padStart(2, '0')}</td>
-                <td style={{ padding: '20px' }}>
-                  <Link to={`/reader/${id}/${index}`} style={{ color: theme.textMain, textDecoration: 'none', fontWeight: 600, fontFamily: "'Crimson Pro', serif", fontSize: '1.2rem' }}>{cap.title}</Link>
-                </td>
-                <td style={{ padding: '20px', color: theme.textMuted, fontSize: '0.9rem' }}>{cap.word_count || 0} palabras</td>
-                <td style={{ padding: '20px' }}>
-                   <button onClick={() => navigate(`/edit-chapter/${cap.id}`)} style={{ background: 'none', border: 'none', color: theme.accent, cursor: 'pointer', fontWeight: 700, marginRight: '20px', fontSize: '0.8rem' }}>EDITAR</button>
-                   <button onClick={() => {/* Lógica borrar */}} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', opacity: 0.7 }}>ELIMINAR</button>
-                </td>
+{/* Gráfico de Biblioteca (NUEVO) */}
+          <div style={{ padding: '30px', borderRadius: '25px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column' }}>
+            <h4 style={{ marginBottom: '25px', color: theme.textMuted, fontSize: '0.8rem', fontWeight: 800, letterSpacing: '1px' }}>ESTADO DE LA AUDIENCIA</h4>
+            
+            {totalInLibrary === 0 ? (
+              <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: theme.textMuted, fontStyle: 'italic', fontSize: '0.9rem' }}>
+                No hay lectores registrados aún.
+              </div>
+            ) : (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie data={pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={theme.chartColors[index % theme.chartColors.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div style={{ paddingLeft: '20px' }}>
+                      {pieData.map((entry, index) => (
+                          <div key={index} style={{ fontSize: '0.8rem', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: theme.chartColors[index] }}></div>
+                              <span style={{ color: theme.textMuted }}>{entry.name}:</span>
+                              <span style={{ fontWeight: 700 }}>{entry.value}</span>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ÍNDICE DE MANUSCRITO */}
+        <div style={{ backgroundColor: theme.card, borderRadius: '25px', overflow: 'hidden', border: `1px solid ${theme.border}` }}>
+          <div style={{ padding: '25px 30px', borderBottom: `1px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+             <h3 style={{ margin: 0, fontFamily: "'Crimson Pro', serif", fontSize: '1.5rem' }}>Estructura de la Obra</h3>
+             <span style={{ fontSize: '0.8rem', color: theme.textMuted }}>{chapters.length} Capítulos publicados</span>
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', backgroundColor: 'rgba(0,0,0,0.02)' }}>
+                <th style={{ padding: '20px 30px', fontSize: '0.7rem', color: theme.textMuted, letterSpacing: '1px' }}>ORDEN</th>
+                <th style={{ padding: '20px', fontSize: '0.7rem', color: theme.textMuted, letterSpacing: '1px' }}>TÍTULO DEL CAPÍTULO</th>
+                <th style={{ padding: '20px', fontSize: '0.7rem', color: theme.textMuted, letterSpacing: '1px' }}>PALABRAS</th>
+                <th style={{ padding: '20px 30px', fontSize: '0.7rem', color: theme.textMuted, letterSpacing: '1px', textAlign: 'right' }}>ACCIONES</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {chapters.map((cap, index) => (
+                <tr key={cap.id} style={{ borderBottom: `1px solid ${theme.border}` }} className="table-row">
+                  <td style={{ padding: '20px 30px', fontWeight: 700, opacity: 0.3, fontSize: '1.2rem', fontFamily: "'Crimson Pro', serif" }}>{index + 1}</td>
+                  <td style={{ padding: '20px' }}>
+                    <Link to={`/reader/${id}/${index}`} style={{ color: theme.textMain, textDecoration: 'none', fontWeight: 600, fontSize: '1.1rem' }}>{cap.title}</Link>
+                  </td>
+                  <td style={{ padding: '20px', color: theme.textMuted, fontSize: '0.9rem' }}>{cap.word_count || 0} palabras</td>
+                  <td style={{ padding: '20px 30px', textAlign: 'right' }}>
+                     <button onClick={() => navigate(`/edit-chapter/${cap.id}`)} style={{ background: 'none', border: 'none', color: theme.accent, cursor: 'pointer', fontWeight: 700, marginRight: '20px', fontSize: '0.75rem', letterSpacing: '0.5px' }}>EDITAR</button>
+                     <button onClick={() => {}} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontWeight: 700, fontSize: '0.75rem', opacity: 0.7 }}>ELIMINAR</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <style>{`
         .table-row:hover { background: rgba(255,255,255,0.02); }
+        input::placeholder, textarea::placeholder { color: #555; }
       `}</style>
     </div>
   );

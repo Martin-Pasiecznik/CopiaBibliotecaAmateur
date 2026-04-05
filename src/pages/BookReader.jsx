@@ -105,28 +105,48 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
     }
   };
 
-  useEffect(() => {
-    if (loading || !chapters.length || !triggerRef.current) return;
-    const observer = new IntersectionObserver((entries) => {
-      const [entry] = entries;
-      if (entry.isIntersecting && !hasCounted.current) {
-        timerRef.current = setTimeout(() => {
-          hasCounted.current = true;
-          fetch(`http://127.0.0.1:5001/api/books/${id}/view`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chapter_index: parseInt(chapterIndex) })
-          }).catch(err => console.error("Error al contabilizar:", err));
-        }, 2000);
-      } else if (timerRef.current) clearTimeout(timerRef.current);
-    }, { threshold: 0.1 });
+useEffect(() => {
+  // 1. Guardias de seguridad: No hacer nada si está cargando o no hay capítulos
+  if (loading || !chapters.length || !triggerRef.current) return;
 
-    observer.observe(triggerRef.current);
-    return () => {
-      observer.disconnect();
+  const currentCap = chapters[parseInt(chapterIndex)];
+  if (!currentCap) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    const [entry] = entries;
+
+    // 2. Si el "marcador" (triggerRef) entra en pantalla y no hemos contado aún...
+    if (entry.isIntersecting && !hasCounted.current) {
+      
+      // 3. Esperamos 2 segundos para confirmar que se está leyendo
+      timerRef.current = setTimeout(() => {
+        hasCounted.current = true;
+
+        fetch(`http://127.0.0.1:5001/api/books/${id}/view`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            chapter_id: currentCap.id, // ID REAL DE LA DB
+            chapter_index: parseInt(chapterIndex) // Índice (por si acaso)
+          })
+        }).catch(err => console.error("Error al contabilizar:", err));
+        
+      }, 2000);
+
+    } else {
+      // Si el usuario sube rápido antes de los 2 segundos, cancelamos el timer
       if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [loading, id, chapterIndex, chapters]);
+    }
+  }, { threshold: 0.1 });
+
+  observer.observe(triggerRef.current);
+
+  // 4. Limpieza: Desconectamos al cambiar de capítulo o cerrar
+  return () => {
+    observer.disconnect();
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
+}, [loading, id, chapterIndex, chapters]);
 
   if (loading) return <div style={{ textAlign: 'center', padding: '100px', color: theme.accent, fontFamily: "'Crimson Pro', serif", fontSize: '1.2rem' }}>Abriendo manuscrito...</div>;
 
