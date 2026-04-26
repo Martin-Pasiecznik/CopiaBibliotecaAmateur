@@ -50,9 +50,6 @@ const AuthorDashboard = ({ user, darkMode }) => {
           }}>
             Bienvenido a tu <span style={{ fontStyle: 'italic', color: theme.accent }}>Estudio</span>
           </h1>
-          <p style={{ color: theme.textMuted, marginTop: '10px', fontSize: '1.1rem' }}>
-            {user.given_name}, aquí nace tu próximo legado.
-          </p>
         </div>
         <Link to="/publish" style={{
           background: theme.accent,

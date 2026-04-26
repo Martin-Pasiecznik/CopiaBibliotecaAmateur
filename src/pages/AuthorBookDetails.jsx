@@ -10,7 +10,7 @@ const AuthorBookDetails = ({ user, darkMode }) => {
   const navigate = useNavigate();
   const [book, setBook] = useState(null);
   const [chapters, setChapters] = useState([]);
-  const [stats, setStats] = useState({ reading: 0, pending: 0, completed: 0, dropped: 0 }); // NUEVO
+  const [stats, setStats] = useState({ reading: 0, pending: 0, completed: 0, dropped: 0 });
   const [loading, setLoading] = useState(true);
   
   const [showEditModal, setShowEditModal] = useState(false);
@@ -28,7 +28,7 @@ const AuthorBookDetails = ({ user, darkMode }) => {
     chartColors: [darkMode ? '#d4af37' : '#b85b3f', '#2ecc71', '#e74c3c', '#9b59b6']
   };
 
-const loadData = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
 
@@ -43,7 +43,6 @@ const loadData = async () => {
       const bookData = await resBook.json();
       const chaptersData = resChapters.ok ? await resChapters.json() : [];
       
-      // Manejo seguro para las estadísticas: si da 404, usamos ceros por defecto
       let statsData = { reading: 0, pending: 0, completed: 0, dropped: 0 };
       if (resStats.ok) {
         statsData = await resStats.json();
@@ -59,12 +58,10 @@ const loadData = async () => {
     } catch (err) {
       console.error("Error crítico cargando datos:", err);
     } finally {
-      // 2. PASE LO QUE PASE, quitamos la pantalla de "Analizando manuscrito..."
       setLoading(false);
     }
   };
 
-  // 3. DESPUÉS llamamos a la función en el useEffect
   useEffect(() => {
     loadData();
   }, [id]);
@@ -102,7 +99,16 @@ const loadData = async () => {
     { name: 'Pendiente', value: stats.pending },
     { name: 'Completado', value: stats.completed },
     { name: 'Abandonado', value: stats.dropped },
-  ].filter(d => d.value > 0); // Solo mostrar si hay datos
+  ].filter(d => d.value > 0);
+
+  // Datos para el gráfico de Calificaciones
+  const ratingChartData = [
+    { name: '5 ★', votos: book?.rating_distribution?.[5] || 0 },
+    { name: '4 ★', votos: book?.rating_distribution?.[4] || 0 },
+    { name: '3 ★', votos: book?.rating_distribution?.[3] || 0 },
+    { name: '2 ★', votos: book?.rating_distribution?.[2] || 0 },
+    { name: '1 ★', votos: book?.rating_distribution?.[1] || 0 },
+  ];
 
   const totalInLibrary = stats.reading + stats.pending + stats.completed + stats.dropped;
 
@@ -176,47 +182,50 @@ const loadData = async () => {
           ))}
         </div>
 
-        {/* ANALÍTICA AVANZADA */}
+        {/* ANALÍTICA AVANZADA (Ahora son 4 tarjetas equilibradas) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px', marginBottom: '50px' }}>
           
-          {/* Gráfico de Barras */}
-          <div style={{ padding: '30px', borderRadius: '25px', backgroundColor: theme.card, border: `1px solid ${theme.border}` }}>
+          {/* Gráfico de Barras - Extensión */}
+          <div style={{ padding: '30px', borderRadius: '25px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column' }}>
             <h4 style={{ marginBottom: '25px', color: theme.textMuted, fontSize: '0.8rem', fontWeight: 800, letterSpacing: '1px' }}>EXTENSIÓN POR CAPÍTULO</h4>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={theme.border} vertical={false} />
-                <XAxis dataKey="name" stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ backgroundColor: darkMode ? '#111' : '#fff', border: `1px solid ${theme.border}`, borderRadius: '10px' }} />
-                <Bar dataKey="palabras" fill={theme.accent} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end' }}>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.border} vertical={false} />
+                  <XAxis dataKey="name" stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ backgroundColor: darkMode ? '#111' : '#fff', border: `1px solid ${theme.border}`, borderRadius: '10px' }} />
+                  <Bar dataKey="palabras" fill={theme.accent} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          {/* grafico de lecturas */}
-          <div style={{ padding: '30px', borderRadius: '20px', backgroundColor: theme.card, border: `1px solid ${theme.border}` }}>
-          <h4 style={{ marginBottom: '25px', color: theme.textMuted, fontSize: '0.9rem', fontWeight: 700, letterSpacing: '1px' }}>RETENCIÓN DE LECTORES</h4>
-          <ResponsiveContainer width="100%" height={250}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="colorVis" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={theme.accent} stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor={theme.accent} stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={theme.border} vertical={false} />
-              <XAxis dataKey="name" stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
-              <YAxis stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ backgroundColor: theme.bg, border: `1px solid ${theme.border}`, borderRadius: '10px' }} />
-              <Area type="monotone" dataKey="vistas" stroke={theme.accent} strokeWidth={3} fillOpacity={1} fill="url(#colorVis)" />
-            </AreaChart>
-          </ResponsiveContainer>
+          {/* Gráfico de Lecturas - Retención */}
+          <div style={{ padding: '30px', borderRadius: '25px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column' }}>
+            <h4 style={{ marginBottom: '25px', color: theme.textMuted, fontSize: '0.8rem', fontWeight: 800, letterSpacing: '1px' }}>RETENCIÓN DE LECTORES</h4>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end' }}>
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorVis" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={theme.accent} stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor={theme.accent} stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.border} vertical={false} />
+                  <XAxis dataKey="name" stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke={theme.textMuted} fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: theme.bg, border: `1px solid ${theme.border}`, borderRadius: '10px' }} />
+                  <Area type="monotone" dataKey="vistas" stroke={theme.accent} strokeWidth={3} fillOpacity={1} fill="url(#colorVis)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>        
 
-{/* Gráfico de Biblioteca (NUEVO) */}
+          {/* Gráfico de Biblioteca - Audiencia */}
           <div style={{ padding: '30px', borderRadius: '25px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column' }}>
             <h4 style={{ marginBottom: '25px', color: theme.textMuted, fontSize: '0.8rem', fontWeight: 800, letterSpacing: '1px' }}>ESTADO DE LA AUDIENCIA</h4>
-            
             {totalInLibrary === 0 ? (
               <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', color: theme.textMuted, fontStyle: 'italic', fontSize: '0.9rem' }}>
                 No hay lectores registrados aún.
@@ -230,7 +239,7 @@ const loadData = async () => {
                           <Cell key={`cell-${index}`} fill={theme.chartColors[index % theme.chartColors.length]} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip contentStyle={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.textMain, borderRadius: '10px' }}/>
                     </PieChart>
                   </ResponsiveContainer>
                   <div style={{ paddingLeft: '20px' }}>
@@ -245,6 +254,32 @@ const loadData = async () => {
               </div>
             )}
           </div>
+
+          {/* Gráfico de Calificaciones (Ahora integrado simétricamente) */}
+          <div style={{ padding: '30px', borderRadius: '25px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+              <h4 style={{ margin: 0, color: theme.textMuted, fontSize: '0.8rem', fontWeight: 800, letterSpacing: '1px' }}>CALIFICACIONES</h4>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: 700, color: theme.accent, lineHeight: 1 }}>{Number(book.avg_rating).toFixed(1)} ★</span>
+                <span style={{ fontSize: '0.7rem', color: theme.textMuted }}>{book.vote_count} votos</span>
+              </div>
+            </div>
+            
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart layout="vertical" data={ratingChartData} margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
+                  <XAxis type="number" hide={true} />
+                  <YAxis dataKey="name" type="category" stroke={theme.textMuted} width={35} axisLine={false} tickLine={false} fontSize={12} />
+                  <Tooltip 
+                    cursor={{fill: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}}
+                    contentStyle={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.textMain, borderRadius: '10px' }} 
+                  />
+                  <Bar dataKey="votos" fill={theme.accent} radius={[0, 4, 4, 0]} barSize={15} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
         </div>
 
         {/* ÍNDICE DE MANUSCRITO */}
@@ -259,6 +294,7 @@ const loadData = async () => {
                 <th style={{ padding: '20px 30px', fontSize: '0.7rem', color: theme.textMuted, letterSpacing: '1px' }}>ORDEN</th>
                 <th style={{ padding: '20px', fontSize: '0.7rem', color: theme.textMuted, letterSpacing: '1px' }}>TÍTULO DEL CAPÍTULO</th>
                 <th style={{ padding: '20px', fontSize: '0.7rem', color: theme.textMuted, letterSpacing: '1px' }}>PALABRAS</th>
+                <th style={{ padding: '20px', fontSize: '0.7rem', color: theme.textMuted, letterSpacing: '1px', textAlign: 'center' }}>COMENTARIOS</th>
                 <th style={{ padding: '20px 30px', fontSize: '0.7rem', color: theme.textMuted, letterSpacing: '1px', textAlign: 'right' }}>ACCIONES</th>
               </tr>
             </thead>
@@ -270,12 +306,20 @@ const loadData = async () => {
                     <Link to={`/reader/${id}/${index}`} style={{ color: theme.textMain, textDecoration: 'none', fontWeight: 600, fontSize: '1.1rem' }}>{cap.title}</Link>
                   </td>
                   <td style={{ padding: '20px', color: theme.textMuted, fontSize: '0.9rem' }}>{cap.word_count || 0} palabras</td>
+                  <td style={{ padding: '20px', textAlign: 'center', color: theme.textMuted, fontSize: '0.9rem' }}>
+                    💬 {cap.comment_count || 0}
+                  </td>
                   <td style={{ padding: '20px 30px', textAlign: 'right' }}>
                      <button onClick={() => navigate(`/edit-chapter/${cap.id}`)} style={{ background: 'none', border: 'none', color: theme.accent, cursor: 'pointer', fontWeight: 700, marginRight: '20px', fontSize: '0.75rem', letterSpacing: '0.5px' }}>EDITAR</button>
                      <button onClick={() => {}} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontWeight: 700, fontSize: '0.75rem', opacity: 0.7 }}>ELIMINAR</button>
                   </td>
                 </tr>
               ))}
+              {chapters.length === 0 && (
+                <tr>
+                  <td colSpan="5" style={{ padding: '30px', textAlign: 'center', color: theme.textMuted }}>No hay capítulos todavía.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
