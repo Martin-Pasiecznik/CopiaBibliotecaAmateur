@@ -59,23 +59,27 @@ const OnboardingModal = ({ user, onSave, darkMode, theme }) => {
     <div style={modalStyle}>
       <div style={cardStyle}>
         <h2 style={{ marginBottom: '8px', fontSize: '1.8rem', color: theme.accent }}>¡Personaliza tu perfil!</h2>
-        <p style={{ fontSize: '0.9rem', color: theme.textMuted, marginBottom: '25px' }}>¿Cómo quieres que te vean los demás autores?</p>
+        <p style={{ fontSize: '0.9rem', color: theme.textMuted, marginBottom: '25px' }}>¿Cómo quieres que te vean los demás autores y lectores?</p>
         
         <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'center' }}>
-          <img 
-            src={selectedPhoto?.startsWith('http') ? selectedPhoto : `http://127.0.0.1:5001/static/avatars_uploaded/${selectedPhoto}`} 
-            alt="Preview" 
-            referrerPolicy="no-referrer"
-            style={{ 
-                width: '100px', height: '100px', borderRadius: '50%', 
-                objectFit: 'cover', border: `3px solid ${theme.accent}`, 
-                padding: '4px', backgroundColor: theme.card 
-            }} 
-          />
+<img 
+  src={
+    selectedPhoto?.startsWith('http') || selectedPhoto?.startsWith('data:image') 
+      ? selectedPhoto 
+      : `http://127.0.0.1:5001/static/avatars_uploaded/${selectedPhoto}`
+  } 
+  alt="Preview" 
+  referrerPolicy="no-referrer"
+  style={{ 
+      width: '100px', height: '100px', borderRadius: '50%', 
+      objectFit: 'cover', border: `3px solid ${theme.accent}`, 
+      padding: '4px', backgroundColor: theme.card 
+  }} 
+/>
         </div>
 
         <div style={{ textAlign: 'left', marginBottom: '20px' }}>
-          <label style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.accent, letterSpacing: '1px', display: 'block', marginBottom: '8px' }}>TU APODO</label>
+          <label style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.accent, letterSpacing: '1px', display: 'block', marginBottom: '8px' }}>TU NICKNAME</label>
           <input 
             type="text" 
             value={nickname} 
@@ -89,7 +93,7 @@ const OnboardingModal = ({ user, onSave, darkMode, theme }) => {
           />
         </div>
 
-        <label style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.accent, letterSpacing: '1px', display: 'block', marginBottom: '12px', textAlign: 'left' }}>ELIGE UN AVATAR</label>
+        <label style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.accent, letterSpacing: '1px', display: 'block', marginBottom: '12px', textAlign: 'left' }}>PUEDES ELEGIR UN AVATAR COMO IMAGEN</label>
         <div style={{ 
             display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '25px',
             padding: '12px', backgroundColor: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)', borderRadius: '15px'
@@ -287,12 +291,16 @@ function App() {
               <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                 {!user ? <AuthButton onSuccess={handleLoginSuccess} darkMode={darkMode} /> : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderRight: `1px solid ${theme.border}`, paddingRight: '15px' }}>
-                    <img 
-                      src={user.picture?.startsWith('http') ? user.picture : `http://127.0.0.1:5001/static/avatars_uploaded/${user.picture}`} 
-                      alt="profile" 
-                      referrerPolicy="no-referrer"
-                      style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} 
-                    />
+<img 
+  src={
+    user.picture?.startsWith('http') || user.picture?.startsWith('data:image') 
+      ? user.picture 
+      : `http://127.0.0.1:5001/static/avatars_uploaded/${user.picture}`
+  } 
+  alt="profile" 
+  referrerPolicy="no-referrer"
+  style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} 
+/>
                     <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: theme.textMuted, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>Salir</button>
                   </div>
                 )}
