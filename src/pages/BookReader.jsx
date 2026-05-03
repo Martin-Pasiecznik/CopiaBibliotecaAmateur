@@ -105,48 +105,39 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
     }
   };
 
-useEffect(() => {
-  // 1. Guardias de seguridad: No hacer nada si está cargando o no hay capítulos
-  if (loading || !chapters.length || !triggerRef.current) return;
+  useEffect(() => {
+    if (loading || !chapters.length || !triggerRef.current) return;
 
-  const currentCap = chapters[parseInt(chapterIndex)];
-  if (!currentCap) return;
+    const currentCap = chapters[parseInt(chapterIndex)];
+    if (!currentCap) return;
 
-  const observer = new IntersectionObserver((entries) => {
-    const [entry] = entries;
+    const observer = new IntersectionObserver((entries) => {
+      const [entry] = entries;
 
-    // 2. Si el "marcador" (triggerRef) entra en pantalla y no hemos contado aún...
-    if (entry.isIntersecting && !hasCounted.current) {
-      
-      // 3. Esperamos 2 segundos para confirmar que se está leyendo
-      timerRef.current = setTimeout(() => {
-        hasCounted.current = true;
+      if (entry.isIntersecting && !hasCounted.current) {
+        timerRef.current = setTimeout(() => {
+          hasCounted.current = true;
+          fetch(`http://127.0.0.1:5001/api/books/${id}/view`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              chapter_id: currentCap.id,
+              chapter_index: parseInt(chapterIndex)
+            })
+          }).catch(err => console.error("Error al contabilizar:", err));
+        }, 2000);
+      } else {
+        if (timerRef.current) clearTimeout(timerRef.current);
+      }
+    }, { threshold: 0.1 });
 
-        fetch(`http://127.0.0.1:5001/api/books/${id}/view`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            chapter_id: currentCap.id, // ID REAL DE LA DB
-            chapter_index: parseInt(chapterIndex) // Índice (por si acaso)
-          })
-        }).catch(err => console.error("Error al contabilizar:", err));
-        
-      }, 2000);
+    observer.observe(triggerRef.current);
 
-    } else {
-      // Si el usuario sube rápido antes de los 2 segundos, cancelamos el timer
+    return () => {
+      observer.disconnect();
       if (timerRef.current) clearTimeout(timerRef.current);
-    }
-  }, { threshold: 0.1 });
-
-  observer.observe(triggerRef.current);
-
-  // 4. Limpieza: Desconectamos al cambiar de capítulo o cerrar
-  return () => {
-    observer.disconnect();
-    if (timerRef.current) clearTimeout(timerRef.current);
-  };
-}, [loading, id, chapterIndex, chapters]);
+    };
+  }, [loading, id, chapterIndex, chapters]);
 
   if (loading) return <div style={{ textAlign: 'center', padding: '100px', color: theme.accent, fontFamily: "'Crimson Pro', serif", fontSize: '1.2rem' }}>Abriendo manuscrito...</div>;
 
@@ -155,20 +146,25 @@ useEffect(() => {
 
   if (!currentChapter) return <div style={{ textAlign: 'center', padding: '50px', color: theme.textMain }}>Capítulo no encontrado.</div>;
 
-  const contentLines = currentChapter.content.split('\n');
-  const midPoint = Math.floor(contentLines.length / 2);
+  // LÓGICA DE FORMATEO: Dividimos por saltos de línea (uno o más)
+  const paragraphs = currentChapter.content.split(/\n+/);
+  const midPointPara = Math.floor(paragraphs.length / 2);
 
   const readerTextStyle = {
     fontSize: `${fontSize}px`,
     fontFamily: fontFamily,
-    lineHeight: '1.8',
+    lineHeight: '1.85', // Interlineado más amplio para lectura cómoda
     maxWidth: '800px',
     margin: '0 auto',
     textAlign: 'justify',
     color: theme.textMain,
-    whiteSpace: 'pre-wrap',
     padding: '0 30px',
     opacity: 0.95
+  };
+
+  const paragraphStyle = {
+    marginBottom: '1.6rem', // Espacio después de cada punto y aparte
+    display: 'block'
   };
 
   return (
@@ -180,7 +176,6 @@ useEffect(() => {
         backgroundColor: theme.bg, borderBottom: `1px solid ${theme.border}`,
         zIndex: 1100, boxShadow: darkMode ? '0 4px 10px rgba(0,0,0,0.5)' : '0 4px 10px rgba(0,0,0,0.05)'
       }}>
-        {/* LADO IZQUIERDO: LOGO + HERRAMIENTAS DE TEXTO */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '25px' }}>
           <Link to="/" style={{ 
             color: theme.textMain, textDecoration: 'none', fontWeight: 800, fontSize: '1.1rem', 
@@ -199,7 +194,6 @@ useEffect(() => {
           </div>
         </div>
         
-        {/* LADO DERECHO: NAVEGACIÓN Y TEMA */}
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
           <button style={{...btnSmall(darkMode, theme), border: 'none', fontWeight: 700, letterSpacing: '1px'}} onClick={() => navigate(`/book/${id}`)}>VOLVER AL ÍNDICE</button>
           <button style={{...btnSmall(darkMode, theme), borderRadius: '50%', width: '40px', height: '40px', padding: 0}} onClick={() => setDarkMode(!darkMode)}>
@@ -218,9 +212,17 @@ useEffect(() => {
         </div>
 
         <div style={readerTextStyle}>
-          {contentLines.slice(0, midPoint).join('\n')}
+          {/* Mapeo de la primera mitad de párrafos */}
+          {paragraphs.slice(0, midPointPara).map((para, i) => (
+            <p key={`p1-${i}`} style={paragraphStyle}>{para}</p>
+          ))}
+          
           <div ref={triggerRef} style={{ height: '40px', margin: '20px 0', opacity: 0.1, textAlign: 'center' }}>✦</div>
-          {contentLines.slice(midPoint).join('\n')}
+          
+          {/* Mapeo de la segunda mitad de párrafos */}
+          {paragraphs.slice(midPointPara).map((para, i) => (
+            <p key={`p2-${i}`} style={paragraphStyle}>{para}</p>
+          ))}
         </div>
       </main>
 
@@ -240,7 +242,7 @@ useEffect(() => {
           <span style={{ fontWeight: 800, color: theme.textMain, fontSize: '1rem', display: 'block' }}> 
             {currentIndex + 1} / {chapters.length} 
           </span>
-          <span style={{ fontSize: '0.6rem', color: theme.accent, fontWeight: 800, letterSpacing: '1px' }}>PÁGINA</span>
+          <span style={{ fontSize: '0.6rem', color: theme.accent, fontWeight: 800, letterSpacing: '1px' }}>CAPÍTULO</span>
         </div>
         <button 
           style={{...navBtnStyle(theme), opacity: currentIndex === chapters.length - 1 ? 0.2 : 1}} 
