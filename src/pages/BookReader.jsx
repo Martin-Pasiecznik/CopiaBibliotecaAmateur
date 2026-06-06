@@ -223,12 +223,19 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '80px' }}>
           {comments.map((c) => (
             <div key={c.id} style={{ padding: '25px', borderRadius: '15px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, display: 'flex', gap: '20px' }}>
-              <div style={{ width: '45px', height: '45px', borderRadius: '50%', background: theme.accent, color: darkMode ? '#000' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.9rem', flexShrink: 0 }}>
-                {c.user_name?.charAt(0).toUpperCase()}
-              </div>
+
+              {/* ── FOTO DE PERFIL: usa display_photo del backend, con fallback ── */}
+              <img
+                src={c.display_photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(c.user_email || c.user_name || 'anon')}`}
+                referrerPolicy="no-referrer"
+                onError={e => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(c.user_email || 'anon')}`; }}
+                style={{ width: '45px', height: '45px', borderRadius: '50%', objectFit: 'cover', border: `2px solid ${theme.accent}`, flexShrink: 0 }}
+                alt={c.display_name || c.user_name}
+              />
+
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 700, color: theme.accent, fontSize: '0.9rem' }}>{c.user_name}</span>
+                  <span style={{ fontWeight: 700, color: theme.accent, fontSize: '0.9rem' }}>{c.display_name || c.user_name}</span>
                   <span style={{ fontSize: '0.7rem', color: theme.textMuted, fontWeight: 600 }}>{new Date(c.timestamp).toLocaleDateString()}</span>
                 </div>
                 <p style={{ margin: 0, color: theme.textMain, lineHeight: '1.6', fontSize: '0.95rem', opacity: 0.9 }}>{c.text}</p>

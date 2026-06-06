@@ -2,35 +2,77 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { API_BASE, authHeader } from '../App';
 
+// ─── HELPER: tiempo relativo ─────────────────────────────────────────────────
+const timeAgo = (dateStr) => {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date)) return null;
+  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (diff < 60)           return 'hace unos segundos';
+  if (diff < 3600)         return `hace ${Math.floor(diff / 60)} min`;
+  if (diff < 86400)        return `hace ${Math.floor(diff / 3600)} h`;
+  if (diff < 86400 * 7)   return `hace ${Math.floor(diff / 86400)} días`;
+  if (diff < 86400 * 30)  return `hace ${Math.floor(diff / (86400 * 7))} semanas`;
+  if (diff < 86400 * 365) return `hace ${Math.floor(diff / (86400 * 30))} meses`;
+  return `hace ${Math.floor(diff / (86400 * 365))} años`;
+};
+
+// ─── Estado del libro — definido por el autor ─────────────────────────────────
+// La fecha del último capítulo es información extra para el lector,
+// pero el estado oficial lo pone el autor.
+const BOOK_STATUS_DISPLAY = {
+  ongoing:   { label: 'En progreso', color: '#4ade80', icon: '✍️', desc: 'El autor está publicando activamente.' },
+  completed: { label: 'Terminada',   color: '#60a5fa', icon: '✅', desc: 'Historia completa.' },
+  paused:    { label: 'En pausa',    color: '#facc15', icon: '⏸️', desc: 'El autor tomó un descanso temporal.' },
+  abandoned: { label: 'Abandonada',  color: '#f87171', icon: '🚫', desc: 'El autor dejó de publicar esta obra.' },
+};
+
+// Fallback cuando el autor aún no configuró el estado:
+// usa la antigüedad del último capítulo para inferirlo.
+const inferStatusFromDate = (dateStr, darkMode) => {
+  if (!dateStr) return { label: 'Sin estado', color: '#8a8782', icon: '○', desc: 'El autor no configuró el estado.' };
+  const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 86400));
+  if (days <= 14)  return { label: 'Activo',    color: darkMode ? '#4ade80' : '#27ae60', icon: '●', desc: 'Actualizado recientemente.' };
+  if (days <= 60)  return { label: 'Reciente',  color: darkMode ? '#d4af37' : '#b85b3f', icon: '●', desc: 'Última actualización hace poco.' };
+  if (days <= 180) return { label: 'Pausado?',  color: '#e67e22',                        icon: '◐', desc: 'Sin actualizaciones en varios meses.' };
+  return             { label: 'Inactivo?',      color: '#8a8782',                        icon: '○', desc: 'Sin actualizaciones hace mucho tiempo.' };
+};
+
+// ─── HELPER: foto de avatar con fallback ─────────────────────────────────────
+const getAvatarSrc = (display_photo, user_email) => {
+  if (display_photo) return display_photo;
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user_email || 'anon')}`;
+};
+
 const BookDetail = ({ user, darkMode }) => {
   const { id } = useParams();
-  const [book, setBook] = useState(null);
+  const [book, setBook]         = useState(null);
   const [chapters, setChapters] = useState([]);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [rating, setRating] = useState({ average: 0, total: 0, userScore: 0 });
-  const [hover, setHover] = useState(0);
+  const [rating, setRating]               = useState({ average: 0, total: 0, userScore: 0 });
+  const [hover, setHover]                 = useState(0);
   const [readingStatus, setReadingStatus] = useState("");
   const [libraryStatus, setLibraryStatus] = useState(null);
   const [isUpdatingLib, setIsUpdatingLib] = useState(false);
-  const [notif, setNotif] = useState("");
-  const [progress, setProgress] = useState({ lastChapterIndex: -1, readChapters: [] });
-  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [notif, setNotif]                 = useState("");
+  const [progress, setProgress]           = useState({ lastChapterIndex: -1, readChapters: [] });
+  const [isStatusOpen, setIsStatusOpen]   = useState(false);
 
   const theme = {
-    accent: darkMode ? '#d4af37' : '#b85b3f',
-    textMain: darkMode ? '#e3e1db' : '#2c2926',
+    accent:    darkMode ? '#d4af37' : '#b85b3f',
+    textMain:  darkMode ? '#e3e1db' : '#2c2926',
     textMuted: darkMode ? '#8a8782' : '#7a746e',
-    card: darkMode ? 'rgba(255, 255, 255, 0.03)' : '#ffffff',
-    border: darkMode ? 'rgba(212, 175, 55, 0.2)' : 'rgba(184, 91, 63, 0.15)',
-    error: '#e74c3c',
-    success: darkMode ? '#82e0aa' : '#27ae60',
-    star: darkMode ? '#d4af37' : '#b85b3f',
-    bgLight: darkMode ? 'rgba(212, 175, 55, 0.05)' : '#fcfaf7',
+    card:      darkMode ? 'rgba(255, 255, 255, 0.03)' : '#ffffff',
+    border:    darkMode ? 'rgba(212, 175, 55, 0.2)'   : 'rgba(184, 91, 63, 0.15)',
+    error:     '#e74c3c',
+    success:   darkMode ? '#82e0aa' : '#27ae60',
+    star:      darkMode ? '#d4af37' : '#b85b3f',
+    bgLight:   darkMode ? 'rgba(212, 175, 55, 0.05)' : '#fcfaf7',
     readColor: darkMode ? 'rgba(130, 224, 170, 0.05)' : '#f0f9f4',
-    readText: darkMode ? '#82e0aa' : '#1e7e44',
+    readText:  darkMode ? '#82e0aa' : '#1e7e44',
   };
 
   const defaultCoverStyle = {
@@ -44,108 +86,86 @@ const BookDetail = ({ user, darkMode }) => {
 
   const userReview = comments.find(c => c.user_email === user?.email);
 
+  // Capítulo más reciente
+  const lastChapter   = chapters.length > 0 ? chapters.reduce((a, b) => (a.id > b.id ? a : b)) : null;
+  const lastUpdateTxt = timeAgo(lastChapter?.created_at);
+
+  // ── Badge de estado ──────────────────────────────────────────────────────
+  // Prioridad 1: estado configurado por el autor (book_status)
+  // Prioridad 2: inferido de la fecha del último capítulo
+  const bookStatusInfo = book?.book_status && BOOK_STATUS_DISPLAY[book.book_status]
+    ? BOOK_STATUS_DISPLAY[book.book_status]
+    : inferStatusFromDate(lastChapter?.created_at, darkMode);
+
+  const isAuthorStatus = !!(book?.book_status && BOOK_STATUS_DISPLAY[book.book_status]);
+
   useEffect(() => {
-    // GETs públicos — sin token
     fetch(`${API_BASE}/api/books/${id}`).then(r => r.json()).then(setBook);
-    fetch(`${API_BASE}/api/books/${id}/chapters`).then(r => r.json()).then(data => setChapters(Array.isArray(data) ? data : []));
+    fetch(`${API_BASE}/api/books/${id}/chapters`).then(r => r.json()).then(d => setChapters(Array.isArray(d) ? d : []));
     fetchComments();
 
     if (user?.session_token) {
-      // rating-status es público (email en URL)
       fetch(`${API_BASE}/api/books/${id}/rating-status/${user.email}`)
         .then(r => r.json())
-        .then(data => setRating({ average: data.average, total: data.total_votes, userScore: data.user_score }));
+        .then(d => setRating({ average: d.average, total: d.total_votes, userScore: d.user_score }));
 
-      // /api/library ahora requiere token — sin email en query
       fetch(`${API_BASE}/api/library`, { headers: authHeader(user) })
-        .then(r => { if (!r.ok) throw new Error('No autorizado'); return r.json(); })
-        .then(data => {
-          const bookInLib = Array.isArray(data) && data.find(b => b.id === parseInt(id));
-          if (bookInLib) setLibraryStatus(bookInLib.status);
-        })
-        .catch(err => console.error("Error cargando biblioteca:", err));
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(d => {
+          const found = Array.isArray(d) && d.find(b => b.id === parseInt(id));
+          if (found) setLibraryStatus(found.status);
+        }).catch(() => {});
 
-      // progreso requiere token
       fetch(`${API_BASE}/api/progress/${user.email}/${id}`, { headers: authHeader(user) })
-        .then(r => { if (!r.ok) throw new Error('No autorizado'); return r.json(); })
-        .then(data => {
-          if (data) setProgress({ lastChapterIndex: data.last_chapter_id, readChapters: data.read_chapters || [] });
-        })
-        .catch(err => console.error("Error cargando progreso:", err));
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(d => { if (d) setProgress({ lastChapterIndex: d.last_chapter_id, readChapters: d.read_chapters || [] }); })
+        .catch(() => {});
     }
   }, [id, user]);
 
   useEffect(() => {
     if (userReview) {
-      const statusMatch = userReview.text.match(/^\[Estado: (.*?)\]/);
-      if (statusMatch) setReadingStatus(statusMatch[1]);
+      const m = userReview.text.match(/^\[Estado: (.*?)\]/);
+      if (m) setReadingStatus(m[1]);
       setNewComment(userReview.text.replace(/^\[Estado: (.*?)\]\s*/, ''));
     }
   }, [userReview]);
 
-  // GET público
   const fetchComments = () => {
     fetch(`${API_BASE}/api/books/${id}/comments?chapter_id=null`)
       .then(r => r.json())
-      .then(data => setComments(Array.isArray(data) ? data : []));
+      .then(d => setComments(Array.isArray(d) ? d : []));
   };
 
-  // POST protegido
   const handleRate = (score) => {
     if (!user?.session_token) return setErrorMsg("Debes iniciar sesión para puntuar.");
-    fetch(`${API_BASE}/api/books/${id}/rate`, {
-      method: 'POST',
-      headers: authHeader(user),
-      body: JSON.stringify({ score }),  // user_email eliminado: viene del token
-    })
-      .then(res => res.json())
-      .then(data => {
-        setRating(prev => ({ ...prev, average: data.average, total: data.total_votes, userScore: score }));
-        setErrorMsg("");
-        fetchComments();
-      });
+    fetch(`${API_BASE}/api/books/${id}/rate`, { method: 'POST', headers: authHeader(user), body: JSON.stringify({ score }) })
+      .then(r => r.json())
+      .then(d => { setRating(p => ({ ...p, average: d.average, total: d.total_votes, userScore: score })); setErrorMsg(""); fetchComments(); });
   };
 
-  // POST protegido
   const updateLibrary = (status) => {
     if (!user?.session_token) return setErrorMsg("Debes iniciar sesión para guardar en tu biblioteca.");
     setIsUpdatingLib(true);
-    fetch(`${API_BASE}/api/library/update`, {
-      method: 'POST',
-      headers: authHeader(user),
-      body: JSON.stringify({ book_id: parseInt(id), status }),  // email viene del token
-    })
-      .then(res => res.json())
+    fetch(`${API_BASE}/api/library/update`, { method: 'POST', headers: authHeader(user), body: JSON.stringify({ book_id: parseInt(id), status }) })
+      .then(r => r.json())
       .then(() => {
         setLibraryStatus(status === 'remove' ? null : status);
-        const labels = { reading: 'Leyendo', completed: 'Leído', dropped: 'Abandonado', pending: 'Pendiente' };
-        setNotif(status === 'remove' ? "Libro quitado de tu lista" : `Añadido como: ${labels[status]}`);
+        const lbl = { reading: 'Leyendo', completed: 'Leído', dropped: 'Abandonado', pending: 'Pendiente' };
+        setNotif(status === 'remove' ? "Libro quitado de tu lista" : `Añadido como: ${lbl[status]}`);
         setTimeout(() => setNotif(""), 5000);
         setIsUpdatingLib(false);
-      })
-      .catch(() => setIsUpdatingLib(false));
+      }).catch(() => setIsUpdatingLib(false));
   };
 
-  // POST protegido
   const postComment = () => {
     if (!user?.session_token) return setErrorMsg("Debes iniciar sesión para dejar una reseña.");
     if (rating.userScore === 0) return setErrorMsg("Primero debes puntuar la obra con estrellas (arriba).");
-    if (!readingStatus) return setErrorMsg("Por favor, selecciona tu progreso de lectura.");
-    if (!newComment.trim()) return setErrorMsg("El texto de la reseña es obligatorio.");
-
+    if (!readingStatus)         return setErrorMsg("Por favor, selecciona tu progreso de lectura.");
+    if (!newComment.trim())     return setErrorMsg("El texto de la reseña es obligatorio.");
     const fullText = `[Estado: ${readingStatus}] ${newComment}`;
-    fetch(`${API_BASE}/api/books/${id}/comments`, {
-      method: 'POST',
-      headers: authHeader(user),
-      body: JSON.stringify({
-        user_name: user.name,
-        // user_email eliminado: viene del token
-        text: fullText,
-        chapter_id: null,
-      }),
-    }).then(res => {
-      if (res.ok) { setErrorMsg(""); fetchComments(); alert(userReview ? "Reseña actualizada" : "Reseña publicada"); }
-    });
+    fetch(`${API_BASE}/api/books/${id}/comments`, { method: 'POST', headers: authHeader(user), body: JSON.stringify({ user_name: user.name, text: fullText, chapter_id: null }) })
+      .then(r => { if (r.ok) { setErrorMsg(""); fetchComments(); alert(userReview ? "Reseña actualizada" : "Reseña publicada"); } });
   };
 
   const renderStars = (count) => [...Array(5)].map((_, i) => (
@@ -157,9 +177,9 @@ const BookDetail = ({ user, darkMode }) => {
   return (
     <div style={{ padding: '60px 20px', maxWidth: '1100px', margin: '0 auto', color: theme.textMain, fontFamily: "'Inter', sans-serif" }}>
 
+      {/* ── HEADER ── */}
       <div style={{ display: 'flex', gap: '60px', marginBottom: '80px', flexWrap: 'wrap' }}>
 
-        {/* PORTADA */}
         <div style={{ flexShrink: 0 }}>
           {book.author_note && book.author_note !== 'null' ? (
             <img src={`${API_BASE}/static/covers/${book.author_note}`} style={{ width: '300px', borderRadius: '12px', boxShadow: '0 30px 60px rgba(0,0,0,0.5)', border: `1px solid ${theme.border}`, objectFit: 'cover' }} alt="Portada" />
@@ -170,16 +190,58 @@ const BookDetail = ({ user, darkMode }) => {
 
         <div style={{ flex: 1, minWidth: '320px' }}>
           <h1 style={{ fontSize: '3.5rem', margin: '0 0 10px 0', fontFamily: "'Crimson Pro', serif", fontWeight: 400, letterSpacing: '-1px' }}>{book.title}</h1>
-          <p style={{ color: theme.accent, fontSize: '1.3rem', marginBottom: '30px', fontWeight: 500, fontStyle: 'italic', fontFamily: "'Crimson Pro', serif" }}>por {book.author}</p>
+          <p style={{ color: theme.accent, fontSize: '1.3rem', marginBottom: '20px', fontWeight: 500, fontStyle: 'italic', fontFamily: "'Crimson Pro', serif" }}>por {book.author}</p>
+
+          {/* ══ ESTADO + FECHA ══════════════════════════════════════════════ */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', marginBottom: '28px', flexWrap: 'wrap' }}>
+
+            {/* Badge principal: estado del autor (o inferido) */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '6px 14px', borderRadius: '20px', backgroundColor: `${bookStatusInfo.color}18`, border: `1.5px solid ${bookStatusInfo.color}50`, flexShrink: 0 }}>
+              <span style={{ fontSize: '0.85rem', lineHeight: 1 }}>{bookStatusInfo.icon}</span>
+              <span style={{ color: bookStatusInfo.color, fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.5px' }}>
+                {bookStatusInfo.label}
+              </span>
+              {/* Indicador de si es oficial del autor o inferido */}
+              {!isAuthorStatus && (
+                <span style={{ color: bookStatusInfo.color, fontSize: '0.6rem', opacity: 0.7 }}>?</span>
+              )}
+            </div>
+
+            {/* Fecha del último capítulo + total */}
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              <div>
+                <span style={{ fontSize: '0.68rem', fontWeight: 700, color: theme.textMuted, letterSpacing: '1px', textTransform: 'uppercase', display: 'block' }}>
+                  Último capítulo
+                </span>
+                {lastUpdateTxt ? (
+                  <span style={{ fontSize: '0.88rem', color: theme.textMain, fontWeight: 500 }}>
+                    {lastUpdateTxt}
+                    {lastChapter && (
+                      <span style={{ color: theme.textMuted, fontSize: '0.78rem', marginLeft: '6px' }}>
+                        — {lastChapter.title}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '0.85rem', color: theme.textMuted, fontStyle: 'italic' }}>Sin fecha registrada</span>
+                )}
+              </div>
+
+              <div>
+                <span style={{ fontSize: '0.68rem', fontWeight: 700, color: theme.textMuted, letterSpacing: '1px', textTransform: 'uppercase', display: 'block' }}>Capítulos</span>
+                <span style={{ fontSize: '0.88rem', color: theme.textMain, fontWeight: 600 }}>{chapters.length}</span>
+              </div>
+            </div>
+
+          </div>
+          {/* ══ FIN ESTADO + FECHA ═════════════════════════════════════════ */}
 
           {/* ESTRELLAS */}
           <div style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div style={{ display: 'flex' }}>
-              {[1, 2, 3, 4, 5].map((star) => (
+              {[1,2,3,4,5].map(star => (
                 <button key={star} onClick={() => handleRate(star)} onMouseEnter={() => setHover(star)} onMouseLeave={() => setHover(0)}
-                  style={{ fontSize: '32px', cursor: 'pointer', background: 'none', border: 'none', padding: 0, color: star <= (hover || rating.userScore) ? theme.star : `${theme.textMuted}33`, transition: 'transform 0.2s' }}>
-                  ★
-                </button>
+                  style={{ fontSize: '32px', cursor: 'pointer', background: 'none', border: 'none', padding: 0, color: star <= (hover || rating.userScore) ? theme.star : `${theme.textMuted}33`, transition: 'transform 0.2s' }}>★</button>
               ))}
             </div>
             <span style={{ fontSize: '2rem', fontWeight: 300, fontFamily: "'Crimson Pro', serif" }}>{rating.average.toFixed(1)}</span>
@@ -190,14 +252,9 @@ const BookDetail = ({ user, darkMode }) => {
           <div style={{ marginBottom: '40px' }}>
             <label style={{ fontSize: '0.7rem', fontWeight: 800, display: 'block', marginBottom: '12px', opacity: 0.6, letterSpacing: '2px' }}>MI BIBLIOTECA</label>
             <div style={{ display: 'flex', background: theme.bgLight, borderRadius: '50px', padding: '5px', gap: '5px', border: `1px solid ${theme.border}`, flexWrap: 'wrap' }}>
-              {[
-                { id: 'reading', label: 'Leyendo' },
-                { id: 'pending', label: 'Pendiente' },
-                { id: 'completed', label: 'Leído' },
-                { id: 'dropped', label: 'Abandonado' },
-              ].map((item) => (
+              {[{id:'reading',label:'Leyendo'},{id:'pending',label:'Pendiente'},{id:'completed',label:'Leído'},{id:'dropped',label:'Abandonado'}].map(item => (
                 <button key={item.id} onClick={() => updateLibrary(item.id)} disabled={isUpdatingLib}
-                  style={{ flex: 1, minWidth: '85px', padding: '8px 12px', border: 'none', borderRadius: '40px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, backgroundColor: libraryStatus === item.id ? theme.accent : 'transparent', color: libraryStatus === item.id ? (darkMode ? '#000' : '#fff') : theme.textMain, transition: '0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  style={{ flex: 1, minWidth: '85px', padding: '8px 12px', border: 'none', borderRadius: '40px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, backgroundColor: libraryStatus === item.id ? theme.accent : 'transparent', color: libraryStatus === item.id ? (darkMode ? '#000' : '#fff') : theme.textMain, transition: '0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {item.label.toUpperCase()}
                 </button>
               ))}
@@ -211,31 +268,47 @@ const BookDetail = ({ user, darkMode }) => {
         </div>
       </div>
 
-      {/* ÍNDICE */}
+      {/* ── ÍNDICE ── */}
       <div style={{ marginBottom: '80px' }}>
         <h3 style={{ fontSize: '1.8rem', fontFamily: "'Crimson Pro', serif", borderBottom: `1px solid ${theme.border}`, paddingBottom: '15px', marginBottom: '30px' }}>Índice de capítulos</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
           {chapters.map((ch, index) => {
-            const isRead = progress.readChapters.includes(ch.id);
-            const isLast = progress.lastChapterIndex === ch.id;
+            const isRead   = progress.readChapters.includes(ch.id);
+            const isLast   = progress.lastChapterIndex === ch.id;
+            const isNewest = lastChapter?.id === ch.id && chapters.length > 1;
             return (
-              <Link key={ch.id} to={`/reader/${book.id}/${index}`} style={{ padding: '20px', background: isRead ? theme.readColor : theme.card, border: isLast ? `1px solid ${theme.accent}` : `1px solid ${theme.border}`, borderRadius: '12px', textDecoration: 'none', color: isRead ? theme.readText : theme.textMain, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: '0.3s' }}
-                onMouseOver={(e) => { e.currentTarget.style.borderColor = theme.accent; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseOut={(e) => { e.currentTarget.style.borderColor = isLast ? theme.accent : theme.border; e.currentTarget.style.transform = 'translateY(0)'; }}
+              <Link key={ch.id} to={`/reader/${book.id}/${index}`}
+                style={{ padding: '20px', background: isRead ? theme.readColor : theme.card, border: isLast ? `1px solid ${theme.accent}` : `1px solid ${theme.border}`, borderRadius: '12px', textDecoration: 'none', color: isRead ? theme.readText : theme.textMain, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: '0.3s' }}
+                onMouseOver={e => { e.currentTarget.style.borderColor = theme.accent; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseOut={e => { e.currentTarget.style.borderColor = isLast ? theme.accent : theme.border; e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 <div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.accent, display: 'block', marginBottom: '4px' }}>{String(index + 1).padStart(2, '0')}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.accent }}>{String(index + 1).padStart(2, '0')}</span>
+                    {isNewest && (
+                      <span style={{ background: bookStatusInfo.color, color: '#000', fontSize: '0.55rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 900, letterSpacing: '0.5px' }}>
+                        NUEVO
+                      </span>
+                    )}
+                  </div>
                   <span style={{ fontWeight: isLast ? 700 : 500, fontSize: '1.05rem' }}>{ch.title}</span>
                   {isLast && <span style={{ color: theme.accent, fontSize: '0.65rem', fontWeight: 800, display: 'block', marginTop: '4px' }}>📍 ÚLTIMA LECTURA</span>}
+                  {ch.created_at && (
+                    <span style={{ color: theme.textMuted, fontSize: '0.65rem', display: 'block', marginTop: '3px' }}>
+                      {timeAgo(ch.created_at)}
+                    </span>
+                  )}
                 </div>
-                <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>{isRead ? 'VISTO' : `${ch.word_count} PAL.`}</span>
+                <span style={{ fontSize: '0.75rem', opacity: 0.6, flexShrink: 0, marginLeft: '10px' }}>
+                  {isRead ? 'VISTO' : `${ch.word_count} PAL.`}
+                </span>
               </Link>
             );
           })}
         </div>
       </div>
 
-      {/* RESEÑAS */}
+      {/* ── RESEÑAS ── */}
       <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: '60px' }}>
         <h3 style={{ fontSize: '2.2rem', fontFamily: "'Crimson Pro', serif", marginBottom: '40px' }}>Críticas de la comunidad</h3>
 
@@ -253,14 +326,12 @@ const BookDetail = ({ user, darkMode }) => {
                 <>
                   <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }} onClick={() => setIsStatusOpen(false)} />
                   <div style={{ position: 'absolute', top: '105%', left: 0, right: 0, background: darkMode ? '#1e1e1e' : '#fff', border: `1px solid ${theme.accent}`, borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)', zIndex: 11, maxHeight: '250px', overflowY: 'auto' }}>
-                    {["Obra completada", "Leyendo actualmente", "Abandonada", ...chapters.map((_, i) => `Capítulo ${i + 1}`)].map((option) => (
+                    {["Obra completada","Leyendo actualmente","Abandonada",...chapters.map((_,i)=>`Capítulo ${i+1}`)].map(option => (
                       <div key={option} onClick={() => { setReadingStatus(option); setIsStatusOpen(false); }}
-                        style={{ padding: '12px 20px', cursor: 'pointer', fontSize: '0.9rem', color: readingStatus === option ? theme.accent : theme.textMain, background: readingStatus === option ? (darkMode ? 'rgba(212,175,55,0.1)' : 'rgba(184,91,63,0.05)') : 'transparent', transition: '0.2s', borderBottom: `1px solid ${theme.border}33` }}
-                        onMouseEnter={(e) => e.target.style.background = darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'}
-                        onMouseLeave={(e) => e.target.style.background = readingStatus === option ? (darkMode ? 'rgba(212,175,55,0.1)' : 'rgba(184,91,63,0.05)') : 'transparent'}
-                      >
-                        {option}
-                      </div>
+                        style={{ padding: '12px 20px', cursor: 'pointer', fontSize: '0.9rem', color: readingStatus === option ? theme.accent : theme.textMain, background: readingStatus === option ? (darkMode ? 'rgba(212,175,55,0.1)':'rgba(184,91,63,0.05)') : 'transparent', transition: '0.2s', borderBottom: `1px solid ${theme.border}33` }}
+                        onMouseEnter={e => e.target.style.background = darkMode ? 'rgba(255,255,255,0.05)':'rgba(0,0,0,0.02)'}
+                        onMouseLeave={e => e.target.style.background = readingStatus === option ? (darkMode ? 'rgba(212,175,55,0.1)':'rgba(184,91,63,0.05)') : 'transparent'}
+                      >{option}</div>
                     ))}
                   </div>
                 </>
@@ -273,14 +344,11 @@ const BookDetail = ({ user, darkMode }) => {
           </div>
 
           <textarea value={newComment} onChange={e => setNewComment(e.target.value)}
-            style={{ width: '100%', height: '140px', padding: '20px', borderRadius: '12px', background: darkMode ? 'rgba(0,0,0,0.2)' : '#fff', color: theme.textMain, border: `1px solid ${theme.border}`, marginBottom: '20px', outline: 'none', fontSize: '1rem', fontFamily: 'inherit', resize: 'none' }}
-            placeholder={user ? "Escribe tu opinión aquí..." : "Inicia sesión para dejar una reseña."} 
-            disabled={!user}
+            style={{ width: '100%', height: '140px', padding: '20px', borderRadius: '12px', background: darkMode ? 'rgba(0,0,0,0.2)':'#fff', color: theme.textMain, border: `1px solid ${theme.border}`, marginBottom: '20px', outline: 'none', fontSize: '1rem', fontFamily: 'inherit', resize: 'none' }}
+            placeholder={user ? "Escribe tu opinión aquí..." : "Inicia sesión para dejar una reseña."} disabled={!user}
           />
-
           {errorMsg && <div style={{ color: theme.error, marginBottom: '20px', fontSize: '0.85rem', fontWeight: 600 }}>{errorMsg}</div>}
-
-          <button onClick={postComment} disabled={!user} style={{ padding: '14px 40px', background: userReview ? theme.success : theme.accent, color: darkMode ? '#000' : '#fff', border: 'none', borderRadius: '50px', cursor: user ? 'pointer' : 'not-allowed', fontWeight: 800, fontSize: '0.85rem', opacity: user ? 1 : 0.5 }}>
+          <button onClick={postComment} disabled={!user} style={{ padding: '14px 40px', background: userReview ? theme.success : theme.accent, color: darkMode ? '#000':'#fff', border: 'none', borderRadius: '50px', cursor: user ? 'pointer':'not-allowed', fontWeight: 800, fontSize: '0.85rem', opacity: user ? 1 : 0.5 }}>
             {userReview ? "ACTUALIZAR RESEÑA" : "PUBLICAR CRÍTICA"}
           </button>
         </div>
@@ -288,11 +356,17 @@ const BookDetail = ({ user, darkMode }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
           {comments.map(c => {
             const statusMatch = c.text.match(/^\[Estado: (.*?)\]/);
-            const statusTag = statusMatch ? statusMatch[1] : null;
-            const cleanText = c.text.replace(/^\[Estado: (.*?)\]\s*/, '');
+            const statusTag   = statusMatch ? statusMatch[1] : null;
+            const cleanText   = c.text.replace(/^\[Estado: (.*?)\]\s*/, '');
             return (
               <div key={c.id} style={{ display: 'flex', gap: '25px', background: theme.card, padding: '30px', borderRadius: '15px', border: c.user_email === user?.email ? `1px solid ${theme.accent}` : `1px solid ${theme.border}` }}>
-                <img src={c.display_photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.user_email}`} style={{ width: '60px', height: '60px', borderRadius: '50%', border: `2px solid ${theme.accent}`, padding: '2px', background: theme.bgLight }} alt="User" />
+                <img
+                  src={getAvatarSrc(c.display_photo, c.user_email)}
+                  referrerPolicy="no-referrer"
+                  onError={e => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(c.user_email||'anon')}`; }}
+                  style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: `2px solid ${theme.accent}`, padding: '2px', background: theme.bgLight, flexShrink: 0 }}
+                  alt={c.display_name || c.user_name}
+                />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', alignItems: 'flex-start' }}>
                     <div>

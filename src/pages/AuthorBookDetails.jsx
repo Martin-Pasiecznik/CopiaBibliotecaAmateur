@@ -6,6 +6,14 @@ import {
 } from 'recharts';
 import { API_BASE, authHeader } from '../App';
 
+// ─── Estados posibles de una obra ────────────────────────────────────────────
+const BOOK_STATUSES = {
+  ongoing:   { label: 'En progreso', icon: '✍️', color: '#4ade80' },
+  paused:    { label: 'En pausa',    icon: '⏸️', color: '#facc15' },
+  completed: { label: 'Terminada',   icon: '✅', color: '#60a5fa' },
+  abandoned: { label: 'Abandonada',  icon: '🚫', color: '#f87171' },
+};
+
 const AuthorBookDetails = ({ user, darkMode }) => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -20,7 +28,12 @@ const AuthorBookDetails = ({ user, darkMode }) => {
   const [editData, setEditData] = useState({ title: '', description: '', tags: '' });
   const [newCover, setNewCover] = useState(null);
   const [deletingBook, setDeletingBook] = useState(false);
-  const [deletingChapterId, setDeletingChapterId] = useState(null); // id del cap que se está borrando
+  const [deletingChapterId, setDeletingChapterId] = useState(null);
+
+  // Estado de publicación de la obra
+  const [bookStatus, setBookStatus]     = useState('ongoing');
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [statusMsg, setStatusMsg]       = useState('');
 
   const theme = {
     bg: darkMode ? '#0a0b10' : '#f4f0ea',
@@ -56,6 +69,7 @@ const AuthorBookDetails = ({ user, darkMode }) => {
       setChapters(Array.isArray(chaptersData) ? chaptersData : []);
       setStats(statsData);
       setEditData({ title: bookData.title, description: bookData.description, tags: bookData.tags || '' });
+      setBookStatus(bookData.book_status || 'ongoing'); // default: en progreso
     } catch (err) {
       console.error('Error cargando datos:', err);
     } finally {
@@ -85,7 +99,31 @@ const AuthorBookDetails = ({ user, darkMode }) => {
     else { alert('No se pudieron guardar los cambios.'); }
   };
 
-  // ─── ELIMINAR CAPÍTULO ────────────────────────────────────────────────────
+  // ─── CAMBIAR ESTADO DE LA OBRA ────────────────────────────────────────────
+  const handleStatusChange = async (newStatus) => {
+    if (newStatus === bookStatus || statusSaving) return;
+    setStatusSaving(true);
+    setStatusMsg('');
+    try {
+      const res = await fetch(`${API_BASE}/api/books/${id}/status`, {
+        method: 'PATCH',
+        headers: authHeader(user),
+        body: JSON.stringify({ book_status: newStatus }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Error ${res.status}`);
+      }
+      setBookStatus(newStatus);
+      setStatusMsg(`✓ ${BOOK_STATUSES[newStatus].label}`);
+      setTimeout(() => setStatusMsg(''), 3000);
+    } catch (err) {
+      setStatusMsg(`Error: ${err.message}`);
+      setTimeout(() => setStatusMsg(''), 4000);
+    } finally {
+      setStatusSaving(false);
+    }
+  };
   const handleDeleteChapter = async (chapterId, chapterTitle) => {
     const confirmed = window.confirm(
       `¿Eliminar el capítulo "${chapterTitle}"?\n\nEsta acción es irreversible y borrará todos los comentarios asociados.`
@@ -166,69 +204,111 @@ const AuthorBookDetails = ({ user, darkMode }) => {
   );
 
   // Modal de confirmación para eliminar el libro completo
-const DeleteBookModal = () => {
-  const [countdown, setCountdown] = useState(10);
+  // Tiene un contador de 10 segundos antes de habilitar el botón de confirmar.
+  const DeleteBookModal = () => {
+    const [countdown, setCountdown] = useState(10);
 
-  useEffect(() => {
-    // Si el contador es mayor a 0, restamos 1 cada segundo
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer); // Limpieza del timer
-    }
-  }, [countdown]);
+    useEffect(() => {
+      if (countdown <= 0) return;
+      const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
+      return () => clearTimeout(timer);
+    }, [countdown]);
 
-  // El botón estará deshabilitado si está eliminando O si el contador es > 0
-  const isButtonDisabled = deletingBook || countdown > 0;
+    const locked   = countdown > 0;
+    const disabled = locked || deletingBook;
 
-  return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(8px)' }}>
-      <div style={{ padding: '40px', borderRadius: '25px', width: '100%', maxWidth: '500px', backgroundColor: darkMode ? '#0f1117' : '#fcfaf7', border: `1px solid ${theme.danger}44`, color: theme.textMain, textAlign: 'center' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '20px' }}>⚠️</div>
-        <h2 style={{ fontFamily: "'Crimson Pro', serif", color: theme.danger, marginTop: 0, fontSize: '1.8rem' }}>
-          Eliminar "{book?.title}"
-        </h2>
-        <p style={{ color: theme.textMuted, lineHeight: '1.6', marginBottom: '10px' }}>
-          Esta acción es <strong style={{ color: theme.textMain }}>permanente e irreversible</strong>.
-        </p>
-        <p style={{ color: theme.textMuted, fontSize: '0.9rem', marginBottom: '30px' }}>
-          Se eliminarán <strong style={{ color: theme.textMain }}>{chapters.length} capítulos</strong>, todas las calificaciones, comentarios y registros de biblioteca de esta obra.
-        </p>
-        
-        <div style={{ display: 'flex', gap: '15px' }}>
-          <button
-            onClick={handleDeleteBook}
-            disabled={isButtonDisabled}
-            style={{ 
-              flex: 1, 
-              padding: '14px', 
-              borderRadius: '50px', 
-              border: 'none', 
-              backgroundColor: theme.danger, 
-              color: '#fff', 
-              fontWeight: 700, 
-              cursor: isButtonDisabled ? 'not-allowed' : 'pointer', 
-              opacity: isButtonDisabled ? 0.6 : 1,
-              transition: 'all 0.3s ease'
-            }}
-          >
-            {deletingBook 
-              ? 'Eliminando...' 
-              : countdown > 0 
-                ? `Espera ${countdown}s...` 
-                : 'Sí, eliminar para siempre'}
-          </button>
-          <button
-            onClick={() => setShowDeleteBookModal(false)}
-            disabled={deletingBook}
-            style={{ flex: 1, padding: '14px', borderRadius: '50px', border: `1px solid ${theme.border}`, backgroundColor: 'transparent', color: theme.textMain, cursor: 'pointer', fontWeight: 600 }}
-          >
-            Cancelar
-          </button>
+    // Progreso del anillo: 0% al inicio → 100% cuando llega a 0
+    const progress   = ((10 - countdown) / 10) * 100;
+    const radius     = 18;
+    const circumference = 2 * Math.PI * radius;
+    const dashOffset = circumference - (progress / 100) * circumference;
+
+    return (
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(8px)' }}>
+        <div style={{ padding: '40px', borderRadius: '25px', width: '100%', maxWidth: '500px', backgroundColor: darkMode ? '#0f1117' : '#fcfaf7', border: `1px solid ${theme.danger}44`, color: theme.textMain, textAlign: 'center' }}>
+
+          <div style={{ fontSize: '3rem', marginBottom: '20px' }}>⚠️</div>
+          <h2 style={{ fontFamily: "'Crimson Pro', serif", color: theme.danger, marginTop: 0, fontSize: '1.8rem' }}>
+            Eliminar "{book?.title}"
+          </h2>
+          <p style={{ color: theme.textMuted, lineHeight: '1.6', marginBottom: '10px' }}>
+            Esta acción es <strong style={{ color: theme.textMain }}>permanente e irreversible</strong>.
+          </p>
+          <p style={{ color: theme.textMuted, fontSize: '0.9rem', marginBottom: '30px' }}>
+            Se eliminarán <strong style={{ color: theme.textMain }}>{chapters.length} capítulos</strong>, todas las calificaciones, comentarios y registros de biblioteca de esta obra.
+          </p>
+
+          <div style={{ display: 'flex', gap: '15px' }}>
+            {/* Botón de confirmar con contador integrado */}
+            <button
+              onClick={!disabled ? handleDeleteBook : undefined}
+              disabled={disabled}
+              style={{
+                flex: 1, padding: '14px', borderRadius: '50px', border: 'none',
+                backgroundColor: locked ? `${theme.danger}40` : theme.danger,
+                color: locked ? `${theme.danger}99` : '#fff',
+                fontWeight: 700, fontSize: '0.9rem',
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                transition: 'all 0.4s ease',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+              }}
+            >
+              {/* Anillo de progreso SVG — solo visible durante la cuenta regresiva */}
+              {locked && (
+                <svg width="40" height="40" viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+                  {/* Pista gris de fondo */}
+                  <circle
+                    cx="20" cy="20" r={radius}
+                    fill="none"
+                    stroke={`${theme.danger}30`}
+                    strokeWidth="3"
+                  />
+                  {/* Arco de progreso */}
+                  <circle
+                    cx="20" cy="20" r={radius}
+                    fill="none"
+                    stroke={theme.danger}
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={dashOffset}
+                    transform="rotate(-90 20 20)"
+                    style={{ transition: 'stroke-dashoffset 1s linear' }}
+                  />
+                  {/* Número en el centro */}
+                  <text
+                    x="20" y="25"
+                    textAnchor="middle"
+                    fontSize="13"
+                    fontWeight="700"
+                    fill={theme.danger}
+                  >
+                    {countdown}
+                  </text>
+                </svg>
+              )}
+              <span>
+                {deletingBook
+                  ? 'Eliminando...'
+                  : locked
+                    ? 'Esperá para confirmar'
+                    : 'Sí, eliminar para siempre'}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setShowDeleteBookModal(false)}
+              disabled={deletingBook}
+              style={{ flex: 1, padding: '14px', borderRadius: '50px', border: `1px solid ${theme.border}`, backgroundColor: 'transparent', color: theme.textMain, cursor: deletingBook ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+            >
+              Cancelar
+            </button>
+          </div>
+
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   // ─── RENDER ───────────────────────────────────────────────────────────────
   if (loading) return (
@@ -287,6 +367,58 @@ const DeleteBookModal = () => {
             <p style={{ color: theme.textMuted, fontSize: '1.1rem', maxWidth: '700px', margin: '20px 0', lineHeight: '1.6' }}>
               {book.description}
             </p>
+
+            {/* ── SELECTOR DE ESTADO ─────────────────────────────────────── */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ fontSize: '0.7rem', fontWeight: 800, color: theme.textMuted, letterSpacing: '1.5px', display: 'block', marginBottom: '10px' }}>
+                ESTADO DE LA OBRA
+              </label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                {Object.entries(BOOK_STATUSES).map(([key, info]) => {
+                  const isActive = bookStatus === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => handleStatusChange(key)}
+                      disabled={statusSaving}
+                      title={info.label}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '50px',
+                        border: `1.5px solid ${isActive ? info.color : theme.border}`,
+                        backgroundColor: isActive ? `${info.color}20` : 'transparent',
+                        color: isActive ? info.color : theme.textMuted,
+                        fontWeight: isActive ? 700 : 500,
+                        fontSize: '0.82rem',
+                        cursor: statusSaving ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s ease',
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        opacity: statusSaving && !isActive ? 0.5 : 1,
+                      }}
+                      onMouseOver={e => { if (!statusSaving && !isActive) { e.currentTarget.style.borderColor = info.color; e.currentTarget.style.color = info.color; }}}
+                      onMouseOut={e => { if (!isActive) { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.color = theme.textMuted; }}}
+                    >
+                      <span>{info.icon}</span>
+                      <span>{info.label}</span>
+                    </button>
+                  );
+                })}
+                {/* Feedback de guardado */}
+                {statusMsg && (
+                  <span style={{
+                    fontSize: '0.78rem', fontWeight: 600, marginLeft: '4px',
+                    color: statusMsg.startsWith('Error') ? '#f87171' : '#4ade80',
+                    transition: 'opacity 0.3s',
+                  }}>
+                    {statusMsg}
+                  </span>
+                )}
+                {statusSaving && (
+                  <span style={{ fontSize: '0.75rem', color: theme.textMuted }}>Guardando...</span>
+                )}
+              </div>
+            </div>
+            {/* ── FIN SELECTOR ───────────────────────────────────────────── */}
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '30px', flexWrap: 'wrap' }}>
               <button onClick={() => navigate(`/add-chapter/${id}`)} style={{ padding: '14px 30px', borderRadius: '50px', border: 'none', backgroundColor: theme.accent, color: darkMode ? '#000' : '#fff', fontWeight: 700, cursor: 'pointer' }}>
