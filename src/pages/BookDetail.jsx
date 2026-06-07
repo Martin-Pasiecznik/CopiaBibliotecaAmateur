@@ -213,18 +213,18 @@ const BookDetail = ({ user, darkMode }) => {
                 <span style={{ fontSize: '0.68rem', fontWeight: 700, color: theme.textMuted, letterSpacing: '1px', textTransform: 'uppercase', display: 'block' }}>
                   Último capítulo
                 </span>
-                {lastUpdateTxt ? (
-                  <span style={{ fontSize: '0.88rem', color: theme.textMain, fontWeight: 500 }}>
-                    {lastUpdateTxt}
-                    {lastChapter && (
-                      <span style={{ color: theme.textMuted, fontSize: '0.78rem', marginLeft: '6px' }}>
-                        — {lastChapter.title}
-                      </span>
-                    )}
-                  </span>
-                ) : (
-                  <span style={{ fontSize: '0.85rem', color: theme.textMuted, fontStyle: 'italic' }}>Sin fecha registrada</span>
-                )}
+{lastChapter?.created_at ? (
+  <span style={{ fontSize: '0.88rem', color: theme.textMain, fontWeight: 500 }}>
+    {new Date(lastChapter.created_at).toLocaleDateString('es-AR', {
+      day: '2-digit', month: 'long', year: 'numeric'
+    })}
+    <span style={{ color: theme.textMuted, fontSize: '0.78rem', marginLeft: '6px' }}>
+      — {lastChapter.title}
+    </span>
+  </span>
+) : (
+  <span style={{ fontSize: '0.85rem', color: theme.textMuted, fontStyle: 'italic' }}>Sin fecha registrada</span>
+)}
               </div>
 
               <div>
