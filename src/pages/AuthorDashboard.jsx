@@ -73,7 +73,7 @@ const AuthorDashboard = ({ user, darkMode }) => {
           textAlign: 'center', padding: '80px', background: theme.card,
           borderRadius: '20px', border: `1px dashed ${theme.border}`, backdropFilter: 'blur(10px)',
         }}>
-          <p style={{ fontSize: '1.2rem', color: theme.textMuted }}>Aún no has empezado tu legado literario.</p>
+          <p style={{ fontSize: '1.2rem', color: theme.textMuted }}>Aún no tienes ninguna historia creada.</p>
           <Link to="/publish" style={{ color: theme.accent, fontWeight: 600, textDecoration: 'none', display: 'block', marginTop: '15px' }}>
             Escribe tu primera historia ahora →
           </Link>

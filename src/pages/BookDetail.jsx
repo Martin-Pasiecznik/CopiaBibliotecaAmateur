@@ -264,7 +264,25 @@ const BookDetail = ({ user, darkMode }) => {
             </div>
           </div>
 
-          <p style={{ lineHeight: '1.8', fontSize: '1.1rem', color: theme.textMuted, marginBottom: '40px', maxWidth: '600px' }}>{book.description}</p>
+          <p style={{ lineHeight: '1.8', fontSize: '1.1rem', color: theme.textMuted, marginBottom: '24px', maxWidth: '600px' }}>{book.description}</p>
+
+
+          <label style={{ fontSize: '0.7rem', fontWeight: 800, display: 'block', marginBottom: '12px', opacity: 0.6, letterSpacing: '2px' }}>ETIQUETAS</label>
+          {book.tags && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '40px' }}>
+              {book.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
+                <span key={tag} style={{
+                  padding: '5px 14px', borderRadius: '20px',
+                  fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.3px',
+                  backgroundColor: `${theme.accent}15`, color: theme.accent,
+                  border: `1px solid ${theme.accent}35`,
+                }}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
         </div>
       </div>
 

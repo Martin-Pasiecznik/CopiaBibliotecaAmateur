@@ -148,7 +148,7 @@ const PublishBook = ({ user, darkMode, refreshBooks }) => {
               <img
                 src={cover ? URL.createObjectURL(cover) : `${API_BASE}/static/covers/default_cover.jpeg`}
                 alt="Preview"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                style={{ width: '100%', height: '100%', objectFit: 'fit' }}
               />
             </div>
             <input type="file" accept="image/*" onChange={handleFileChange} style={{ fontSize: '0.8rem', color: theme.textMuted, cursor: 'pointer' }} />
