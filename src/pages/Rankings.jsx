@@ -5,6 +5,35 @@ const Rankings = ({ darkMode }) => {
   const [topBooks, setTopBooks] = useState([]);
   const [filter, setFilter] = useState("");
 
+  // Géneros principales — siempre visibles como pills en la fila de arriba
+  const mainGenres = ["Fantasía", "Romance", "Terror", "Ciencia Ficción", "Drama"];
+
+  // Resto de categorías — agrupadas y escondidas detrás de "Más filtros"
+  // para no llenar la pantalla de pills.
+  const moreGenreGroups = [
+    {
+      name: 'Subgéneros',
+      tags: ["Isekai", "LitRPG", "Magia", "Mazmorra", "Reencarnación", "Regresión", "Sistema", "Cultivación", "Wuxia", "Xianxia"],
+    },
+    {
+      name: 'Romance y Slice of Life',
+      tags: ["Slice of Life", "Romance Moderno", "BL", "GL", "Harem", "Amor Prohibido"],
+    },
+    {
+      name: 'Ambientación',
+      tags: ["Mundo Apocalíptico", "Distopía", "Steampunk", "Cyberpunk", "Fantasía Oscura", "Alta Fantasía", "Fantasía Urbana", "Histórico", "Medieval"],
+    },
+    {
+      name: 'Protagonista y Tono',
+      tags: ["Protagonista Femenina", "Protagonista Masculino", "Anti-héroe", "Slow Burn", "Dark", "Fluffy", "Mature"],
+    },
+  ];
+
+  // Lista plana de todos los tags "secundarios" — usado para saber si el
+  // filtro activo viene de ahí y mostrarlo en el botón "Más filtros"
+  const moreGenreTags = moreGenreGroups.flatMap(g => g.tags);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
+
   // NUEVA PALETA: Sincronizada con el estilo Neo-Editorial
   const theme = {
     bg: darkMode ? '#0a0b10' : '#f4f0ea', 
@@ -53,11 +82,11 @@ const Rankings = ({ darkMode }) => {
       </header>
 
       {/* FILTROS ELEGANTES */}
-      <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '20px', marginBottom: '40px', scrollbarWidth: 'none', justifyContent: 'center' }}>
-        {["", "Fantasía", "Romance", "Terror", "Ciencia Ficción", "Drama"].map(tag => (
+      <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '20px', marginBottom: showMoreFilters ? '20px' : '40px', scrollbarWidth: 'none', justifyContent: 'center', flexWrap: 'wrap' }}>
+        {["", ...mainGenres].map(tag => (
           <button 
             key={tag}
-            onClick={() => setFilter(tag)}
+            onClick={() => { setFilter(tag); setShowMoreFilters(false); }}
             style={{
               padding: '8px 22px', borderRadius: '50px', 
               border: `1px solid ${filter === tag ? theme.accent : theme.border}`,
@@ -72,7 +101,73 @@ const Rankings = ({ darkMode }) => {
             {tag || "Todos los Géneros"}
           </button>
         ))}
+
+        {/* Botón "Más filtros" — si el filtro activo viene de una categoría
+            secundaria, muestra ese tag en vez del texto genérico */}
+        <button
+          onClick={() => setShowMoreFilters(prev => !prev)}
+          style={{
+            padding: '8px 22px', borderRadius: '50px',
+            border: `1px solid ${moreGenreTags.includes(filter) || showMoreFilters ? theme.accent : theme.border}`,
+            background: moreGenreTags.includes(filter) ? theme.accent : 'transparent',
+            color: moreGenreTags.includes(filter) ? (darkMode ? '#0a0b10' : '#ffffff') : theme.accent,
+            cursor: 'pointer', fontWeight: 700, transition: 'all 0.3s ease', whiteSpace: 'nowrap',
+            fontFamily: "'Inter', sans-serif", fontSize: '0.9rem',
+            display: 'flex', alignItems: 'center', gap: '6px',
+          }}
+        >
+          {moreGenreTags.includes(filter) ? filter : 'Más filtros'}
+          <span style={{ fontSize: '0.7rem', transform: showMoreFilters ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▾</span>
+        </button>
       </div>
+
+      {/* PANEL DE CATEGORÍAS SECUNDARIAS — compacto, se despliega bajo la fila principal */}
+      {showMoreFilters && (
+        <div style={{
+          background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '20px',
+          padding: '25px 30px', marginBottom: '40px',
+          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '1px', color: theme.textMuted, textTransform: 'uppercase' }}>
+              Más categorías
+            </span>
+            <button
+              onClick={() => setShowMoreFilters(false)}
+              style={{ background: 'none', border: 'none', color: theme.textMuted, cursor: 'pointer', fontSize: '0.9rem' }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            {moreGenreGroups.map(group => (
+              <div key={group.name}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.5px', color: theme.accent, opacity: 0.85 }}>
+                  {group.name}
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {group.tags.map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => setFilter(filter === tag ? '' : tag)}
+                      style={{
+                        padding: '6px 16px', borderRadius: '50px', fontSize: '0.8rem',
+                        border: `1px solid ${filter === tag ? theme.accent : theme.border}`,
+                        background: filter === tag ? theme.accent : 'transparent',
+                        color: filter === tag ? (darkMode ? '#0a0b10' : '#ffffff') : theme.textMain,
+                        cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* LISTA DE RANKING */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
