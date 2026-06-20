@@ -15,26 +15,38 @@ const AdvancedSearch = ({ darkMode }) => {
 
   const [filters, setFilters] = useState(initialState);
 
-  const tagsDisponibles = [
-  // Géneros principales
-  "Fantasía", "Romance", "Terror", "Misterio", "Ciencia Ficción", "Aventura",
-  "Drama", "Acción", "Comedia", "Thriller",
+  // Tags agrupados por categoría — permite mostrarlos en un acordeón
+  // en vez de una lista plana interminable.
+  const tagGroups = [
+    {
+      name: 'Géneros principales',
+      tags: ["Fantasía", "Romance", "Terror", "Misterio", "Ciencia Ficción", "Aventura", "Drama", "Acción", "Comedia", "Thriller"],
+    },
+    {
+      name: 'Subgéneros',
+      tags: ["Isekai", "LitRPG", "Magia", "Mazmorra", "Reencarnación", "Regresión", "Sistema", "Cultivación", "Wuxia", "Xianxia"],
+    },
+    {
+      name: 'Romance y Slice of Life',
+      tags: ["Slice of Life", "Romance Moderno", "BL", "GL", "Harem", "Amor Prohibido"],
+    },
+    {
+      name: 'Ambientación',
+      tags: ["Mundo Apocalíptico", "Distopía", "Steampunk", "Cyberpunk", "Fantasía Oscura", "Alta Fantasía", "Fantasía Urbana", "Histórico", "Medieval"],
+    },
+    {
+      name: 'Protagonista y Tono',
+      tags: ["Protagonista Femenina", "Protagonista Masculino", "Anti-héroe", "Slow Burn", "Dark", "Fluffy", "Mature"],
+    },
+  ];
 
-  // Subgéneros populares en webnovelas
-  "Isekai", "LitRPG", "Magia", "Mazmorra", "Reencarnación", "Regresión",
-  "Sistema", "Cultivación", "Wuxia", "Xianxia",
+  // Qué categorías están desplegadas. Por defecto solo la primera,
+  // así la sidebar no arranca ocupando toda la pantalla.
+  const [expandedGroups, setExpandedGroups] = useState({ 'Géneros principales': true });
+  const toggleGroup = (name) => setExpandedGroups(prev => ({ ...prev, [name]: !prev[name] }));
 
-  // Romance y slice of life
-  "Slice of Life", "Romance Moderno", "BL", "GL", "Harem", "Amor Prohibido",
-
-  // Ambientación
-  "Mundo Apocalíptico", "Distopía", "Steampunk", "Cyberpunk", "Fantasía Oscura",
-  "Alta Fantasía", "Fantasía Urbana", "Histórico", "Medieval",
-
-  // Protagonista y tono
-  "Protagonista Femenina", "Protagonista Masculino", "Anti-héroe",
-  "Slow Burn", "Dark", "Fluffy", "Mature",
-];
+  // Buscador rápido dentro de las etiquetas
+  const [tagSearch, setTagSearch] = useState('');
 
   const theme = {
     bg: darkMode ? '#0a0b10' : '#f4f0ea', 
@@ -49,10 +61,23 @@ const AdvancedSearch = ({ darkMode }) => {
   // Función para resetear todo
   const handleReset = () => {
     setFilters(initialState);
+    setTagSearch('');
   };
 
   // Comprobar si hay algún filtro activo para mostrar el botón de reset
   const hasActiveFilters = filters.q !== '' || filters.tags.length > 0 || filters.minRating > 0 || filters.sort !== 'newest';
+
+  // Grupos a mostrar — si hay texto de búsqueda, filtra los tags dentro
+  // de cada grupo y oculta los grupos sin coincidencias.
+  const normalizedSearch = tagSearch.trim().toLowerCase();
+  const visibleGroups = tagGroups
+    .map(group => ({
+      ...group,
+      tags: normalizedSearch
+        ? group.tags.filter(t => t.toLowerCase().includes(normalizedSearch))
+        : group.tags,
+    }))
+    .filter(group => group.tags.length > 0);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -174,22 +199,96 @@ const AdvancedSearch = ({ darkMode }) => {
         <label style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '1px', color: theme.textMuted, textTransform: 'uppercase' }}>
           Etiquetas <span style={{ color: theme.accent, fontWeight: 400 }}>({filters.tags.length})</span>
         </label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '15px' }}>
-          {tagsDisponibles.map(t => {
-            const isSelected = filters.tags.includes(t);
-            return (
-              <button key={t} onClick={() => toggleTag(t)}
+
+        {/* Buscador rápido — escribís y filtra los tags de todas las categorías */}
+        <input
+          type="text"
+          placeholder="Buscar etiqueta..."
+          value={tagSearch}
+          onChange={e => setTagSearch(e.target.value)}
+          style={{
+            width: '100%', padding: '9px 12px', marginTop: '12px', marginBottom: '12px',
+            borderRadius: '10px', border: `1px solid ${theme.border}`,
+            backgroundColor: darkMode ? '#11131a' : '#ffffff',
+            color: theme.textMain, fontSize: '0.8rem', outline: 'none',
+          }}
+        />
+
+        {/* Chips de tags ya seleccionados — visibles aunque la categoría esté cerrada */}
+        {filters.tags.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '15px' }}>
+            {filters.tags.map(t => (
+              <span
+                key={t}
+                onClick={() => toggleTag(t)}
+                title="Quitar"
                 style={{
-                  padding: '8px 14px', fontSize: '0.8rem', borderRadius: '20px', 
-                  border: `1px solid ${isSelected ? theme.accent : theme.border}`,
-                  backgroundColor: isSelected ? theme.accent : 'transparent',
-                  color: isSelected ? (darkMode ? '#0a0b10' : '#ffffff') : theme.textMain, 
-                  cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease'
-                }}>
-                {isSelected ? '✦ ' : ''}{t}
-              </button>
-            )
+                  padding: '5px 10px', fontSize: '0.72rem', borderRadius: '20px',
+                  backgroundColor: theme.accent, color: darkMode ? '#0a0b10' : '#ffffff',
+                  cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px',
+                }}
+              >
+                {t} <span style={{ opacity: 0.7 }}>✕</span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Acordeón de categorías */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {visibleGroups.map(group => {
+            // Mientras hay búsqueda activa, todas las categorías con resultados se muestran abiertas
+            const isOpen = normalizedSearch ? true : !!expandedGroups[group.name];
+            return (
+              <div key={group.name} style={{ border: `1px solid ${theme.border}`, borderRadius: '12px', overflow: 'hidden' }}>
+                <button
+                  onClick={() => toggleGroup(group.name)}
+                  style={{
+                    width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '10px 12px', border: 'none', cursor: 'pointer',
+                    backgroundColor: isOpen ? `${theme.accent}10` : 'transparent',
+                    color: theme.textMain,
+                  }}
+                >
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700 }}>{group.name}</span>
+                  <span style={{
+                    fontSize: '0.65rem', color: theme.textMuted,
+                    transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s',
+                  }}>▼</span>
+                </button>
+
+                {isOpen && (
+                  <div style={{
+                    padding: '12px', display: 'flex', flexWrap: 'wrap', gap: '6px',
+                    borderTop: `1px solid ${theme.border}`,
+                  }}>
+                    {group.tags.map(t => {
+                      const isSelected = filters.tags.includes(t);
+                      return (
+                        <button key={t} onClick={() => toggleTag(t)}
+                          style={{
+                            padding: '6px 12px', fontSize: '0.75rem', borderRadius: '20px',
+                            border: `1px solid ${isSelected ? theme.accent : theme.border}`,
+                            backgroundColor: isSelected ? theme.accent : 'transparent',
+                            color: isSelected ? (darkMode ? '#0a0b10' : '#ffffff') : theme.textMain,
+                            cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease',
+                          }}>
+                          {isSelected ? '✦ ' : ''}{t}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
           })}
+
+          {/* Sin resultados en la búsqueda de tags */}
+          {normalizedSearch && visibleGroups.length === 0 && (
+            <p style={{ fontSize: '0.78rem', color: theme.textMuted, fontStyle: 'italic', textAlign: 'center', padding: '10px 0' }}>
+              No se encontró ninguna etiqueta.
+            </p>
+          )}
         </div>
       </aside>
 
