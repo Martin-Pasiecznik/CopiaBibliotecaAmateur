@@ -20,7 +20,26 @@ const PublishBook = ({ user, darkMode, refreshBooks }) => {
     inputBg: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)',
   };
 
-  const suggestedGenres = ["Terror", "Romance", "Fantasía", "Ciencia Ficción", "Misterio", "Aventura"];
+  const suggestedGenres = [
+  // Géneros principales
+  "Fantasía", "Romance", "Terror", "Misterio", "Ciencia Ficción", "Aventura",
+  "Drama", "Acción", "Comedia", "Thriller",
+
+  // Subgéneros populares en webnovelas
+  "Isekai", "LitRPG", "Magia", "Mazmorra", "Reencarnación", "Regresión",
+  "Sistema", "Cultivación", "Wuxia", "Xianxia",
+
+  // Romance y slice of life
+  "Slice of Life", "Romance Moderno", "BL", "GL", "Harem", "Amor Prohibido",
+
+  // Ambientación
+  "Mundo Apocalíptico", "Distopía", "Steampunk", "Cyberpunk", "Fantasía Oscura",
+  "Alta Fantasía", "Fantasía Urbana", "Histórico", "Medieval",
+
+  // Protagonista y tono
+  "Protagonista Femenina", "Protagonista Masculino", "Anti-héroe",
+  "Slow Burn", "Dark", "Fluffy", "Mature",
+];
 
   const handleGenreClick = (genre) => {
     if (!tags.includes(genre)) {

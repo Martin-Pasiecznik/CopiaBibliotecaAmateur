@@ -8,10 +8,10 @@ import { API_BASE, authHeader } from '../App';
 
 // ─── Estados posibles de una obra ────────────────────────────────────────────
 const BOOK_STATUSES = {
-  ongoing:   { label: 'En progreso', icon: '✍️', color: '#4ade80' },
-  paused:    { label: 'En pausa',    icon: '⏸️', color: '#facc15' },
-  completed: { label: 'Terminada',   icon: '✅', color: '#60a5fa' },
-  abandoned: { label: 'Abandonada',  icon: '🚫', color: '#f87171' },
+  ongoing:   { label: 'En progreso', icon: '', color: '#4ade80' },
+  paused:    { label: 'En pausa',    icon: '', color: '#facc15' },
+  completed: { label: 'Terminada',   icon: '', color: '#60a5fa' },
+  abandoned: { label: 'Abandonada',  icon: '', color: '#f87171' },
 };
 
 const AuthorBookDetails = ({ user, darkMode }) => {
@@ -34,6 +34,22 @@ const AuthorBookDetails = ({ user, darkMode }) => {
   const [bookStatus, setBookStatus]     = useState('ongoing');
   const [statusSaving, setStatusSaving] = useState(false);
   const [statusMsg, setStatusMsg]       = useState('');
+
+  // Contador del modal de eliminar — vive en el componente principal
+  // (no en el modal) para que no se reinicie por culpa de remounts.
+  const [deleteCountdown, setDeleteCountdown] = useState(10);
+
+  // Reiniciar el contador cada vez que se abre el modal
+  useEffect(() => {
+    if (showDeleteBookModal) setDeleteCountdown(10);
+  }, [showDeleteBookModal]);
+
+  // Decrementar mientras el modal esté abierto y quede tiempo
+  useEffect(() => {
+    if (!showDeleteBookModal || deleteCountdown <= 0) return;
+    const timer = setTimeout(() => setDeleteCountdown(c => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [showDeleteBookModal, deleteCountdown]);
 
   const theme = {
     bg: darkMode ? '#0a0b10' : '#f4f0ea',
@@ -176,138 +192,35 @@ const AuthorBookDetails = ({ user, darkMode }) => {
     }
   };
 
-  // ─── MODALES ──────────────────────────────────────────────────────────────
-  const EditModal = () => (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(8px)' }}>
-      <div style={{ padding: '40px', borderRadius: '25px', width: '100%', maxWidth: '600px', backgroundColor: darkMode ? '#0f1117' : '#fcfaf7', border: `1px solid ${theme.border}`, color: theme.textMain }}>
-        <h2 style={{ fontFamily: "'Crimson Pro', serif", color: theme.accent, marginTop: 0 }}>Ajustes de la Obra</h2>
-        <form onSubmit={handleUpdateBook}>
-          <label style={labelStyle(theme)}>TÍTULO</label>
-          <input style={inputStyleModal(theme)} value={editData.title} onChange={e => setEditData({ ...editData, title: e.target.value })} />
+  // ─── GÉNEROS SUGERIDOS (igual que PublishBook) ────────────────────────────
+    const suggestedGenres = [
+  // Géneros principales
+  "Fantasía", "Romance", "Terror", "Misterio", "Ciencia Ficción", "Aventura",
+  "Drama", "Acción", "Comedia", "Thriller",
 
-          <label style={labelStyle(theme)}>SINOPSIS</label>
-          <textarea style={{ ...inputStyleModal(theme), height: '120px', fontFamily: 'inherit', resize: 'none' }} value={editData.description} onChange={e => setEditData({ ...editData, description: e.target.value })} />
+  // Subgéneros populares en webnovelas
+  "Isekai", "LitRPG", "Magia", "Mazmorra", "Reencarnación", "Regresión",
+  "Sistema", "Cultivación", "Wuxia", "Xianxia",
 
-          <label style={labelStyle(theme)}>ETIQUETAS</label>
-          <input style={inputStyleModal(theme)} value={editData.tags} onChange={e => setEditData({ ...editData, tags: e.target.value })} placeholder="Terror, Romance, Fantasía..." />
+  // Romance y slice of life
+  "Slice of Life", "Romance Moderno", "BL", "GL", "Harem", "Amor Prohibido",
 
-          <label style={labelStyle(theme)}>NUEVA PORTADA (opcional)</label>
-          <input type="file" accept="image/*" onChange={e => setNewCover(e.target.files[0])} style={{ fontSize: '0.85rem', color: theme.textMuted, marginBottom: '25px', display: 'block' }} />
+  // Ambientación
+  "Mundo Apocalíptico", "Distopía", "Steampunk", "Cyberpunk", "Fantasía Oscura",
+  "Alta Fantasía", "Fantasía Urbana", "Histórico", "Medieval",
 
-          <div style={{ display: 'flex', gap: '15px' }}>
-            <button type="submit" style={{ flex: 1, padding: '12px', borderRadius: '50px', border: 'none', backgroundColor: theme.accent, color: darkMode ? '#000' : '#fff', fontWeight: 700, cursor: 'pointer' }}>Guardar Cambios</button>
-            <button type="button" onClick={() => setShowEditModal(false)} style={{ flex: 1, padding: '12px', borderRadius: '50px', border: `1px solid ${theme.border}`, backgroundColor: 'transparent', color: theme.textMain, cursor: 'pointer' }}>Cancelar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-
-  // Modal de confirmación para eliminar el libro completo
-  // Tiene un contador de 10 segundos antes de habilitar el botón de confirmar.
-  const DeleteBookModal = () => {
-    const [countdown, setCountdown] = useState(10);
-
-    useEffect(() => {
-      if (countdown <= 0) return;
-      const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
-      return () => clearTimeout(timer);
-    }, [countdown]);
-
-    const locked   = countdown > 0;
-    const disabled = locked || deletingBook;
-
-    // Progreso del anillo: 0% al inicio → 100% cuando llega a 0
-    const progress   = ((10 - countdown) / 10) * 100;
-    const radius     = 18;
-    const circumference = 2 * Math.PI * radius;
-    const dashOffset = circumference - (progress / 100) * circumference;
-
-    return (
-      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(8px)' }}>
-        <div style={{ padding: '40px', borderRadius: '25px', width: '100%', maxWidth: '500px', backgroundColor: darkMode ? '#0f1117' : '#fcfaf7', border: `1px solid ${theme.danger}44`, color: theme.textMain, textAlign: 'center' }}>
-
-          <div style={{ fontSize: '3rem', marginBottom: '20px' }}>⚠️</div>
-          <h2 style={{ fontFamily: "'Crimson Pro', serif", color: theme.danger, marginTop: 0, fontSize: '1.8rem' }}>
-            Eliminar "{book?.title}"
-          </h2>
-          <p style={{ color: theme.textMuted, lineHeight: '1.6', marginBottom: '10px' }}>
-            Esta acción es <strong style={{ color: theme.textMain }}>permanente e irreversible</strong>.
-          </p>
-          <p style={{ color: theme.textMuted, fontSize: '0.9rem', marginBottom: '30px' }}>
-            Se eliminarán <strong style={{ color: theme.textMain }}>{chapters.length} capítulos</strong>, todas las calificaciones, comentarios y registros de biblioteca de esta obra.
-          </p>
-
-          <div style={{ display: 'flex', gap: '15px' }}>
-            {/* Botón de confirmar con contador integrado */}
-            <button
-              onClick={!disabled ? handleDeleteBook : undefined}
-              disabled={disabled}
-              style={{
-                flex: 1, padding: '14px', borderRadius: '50px', border: 'none',
-                backgroundColor: locked ? `${theme.danger}40` : theme.danger,
-                color: locked ? `${theme.danger}99` : '#fff',
-                fontWeight: 700, fontSize: '0.9rem',
-                cursor: disabled ? 'not-allowed' : 'pointer',
-                transition: 'all 0.4s ease',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              }}
-            >
-              {/* Anillo de progreso SVG — solo visible durante la cuenta regresiva */}
-              {locked && (
-                <svg width="40" height="40" viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
-                  {/* Pista gris de fondo */}
-                  <circle
-                    cx="20" cy="20" r={radius}
-                    fill="none"
-                    stroke={`${theme.danger}30`}
-                    strokeWidth="3"
-                  />
-                  {/* Arco de progreso */}
-                  <circle
-                    cx="20" cy="20" r={radius}
-                    fill="none"
-                    stroke={theme.danger}
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={dashOffset}
-                    transform="rotate(-90 20 20)"
-                    style={{ transition: 'stroke-dashoffset 1s linear' }}
-                  />
-                  {/* Número en el centro */}
-                  <text
-                    x="20" y="25"
-                    textAnchor="middle"
-                    fontSize="13"
-                    fontWeight="700"
-                    fill={theme.danger}
-                  >
-                    {countdown}
-                  </text>
-                </svg>
-              )}
-              <span>
-                {deletingBook
-                  ? 'Eliminando...'
-                  : locked
-                    ? 'Esperá para confirmar'
-                    : 'Sí, eliminar para siempre'}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setShowDeleteBookModal(false)}
-              disabled={deletingBook}
-              style={{ flex: 1, padding: '14px', borderRadius: '50px', border: `1px solid ${theme.border}`, backgroundColor: 'transparent', color: theme.textMain, cursor: deletingBook ? 'not-allowed' : 'pointer', fontWeight: 600 }}
-            >
-              Cancelar
-            </button>
-          </div>
-
-        </div>
-      </div>
-    );
+  // Protagonista y tono
+  "Protagonista Femenina", "Protagonista Masculino", "Anti-héroe",
+  "Slow Burn", "Dark", "Fluffy", "Mature",
+];
+  // ─── GÉNEROS SUGERIDOS — click para agregar, click de nuevo para quitar ───
+  const handleGenreClick = (genre) => {
+    const currentTags = editData.tags.split(',').map(t => t.trim()).filter(Boolean);
+    const alreadySelected = currentTags.includes(genre);
+    const newTags = alreadySelected
+      ? currentTags.filter(t => t !== genre)        // ya estaba → lo quito
+      : [...currentTags, genre];                     // no estaba → lo agrego
+    setEditData(prev => ({ ...prev, tags: newTags.join(', ') }));
   };
 
   // ─── RENDER ───────────────────────────────────────────────────────────────
@@ -340,10 +253,232 @@ const AuthorBookDetails = ({ user, darkMode }) => {
 
   const totalInLibrary = stats.reading + stats.pending + stats.completed + stats.dropped;
 
+  // Preview de portada para el modal de edición
+  const coverPreviewSrc = newCover
+    ? URL.createObjectURL(newCover)
+    : book?.author_note && book.author_note !== 'null'
+      ? `${API_BASE}/static/covers/${book.author_note}`
+      : `${API_BASE}/static/covers/default_cover.jpeg`;
+
+  // Anillo de progreso del modal de eliminar
+  const deleteLocked       = deleteCountdown > 0;
+  const deleteDisabled     = deleteLocked || deletingBook;
+  const deleteProgressPct  = ((10 - deleteCountdown) / 10) * 100;
+  const ringRadius         = 18;
+  const ringCircumference  = 2 * Math.PI * ringRadius;
+  const ringDashOffset     = ringCircumference - (deleteProgressPct / 100) * ringCircumference;
+
+  // Tags ya seleccionados, como array — para resaltar los botones de género
+  const selectedTags = editData.tags.split(',').map(t => t.trim()).filter(Boolean);
+
   return (
     <div style={{ padding: '40px 0', color: theme.textMain, fontFamily: "'Inter', sans-serif", backgroundColor: theme.bg, minHeight: '100vh' }}>
-      {showEditModal     && <EditModal />}
-      {showDeleteBookModal && <DeleteBookModal />}
+
+      {/* ══ MODAL: EDITAR OBRA — JSX inline, NO es un componente aparte ══
+          (definirlo como función dentro del render causaba que React
+          desmonte y remonte todo el modal en cada tecla/click, perdiendo
+          el foco y "saltando" el scroll hacia arriba) */}
+      {showEditModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          backgroundColor: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
+          overflowY: 'auto',
+          padding: '40px 20px',
+        }}>
+          <div style={{
+            width: '100%', maxWidth: '700px',
+            backgroundColor: darkMode ? '#0a0b10' : '#f4f0ea',
+            padding: '40px', borderRadius: '24px',
+            border: `1px solid ${theme.border}`,
+            backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+            color: theme.textMain,
+            boxShadow: '0 30px 60px rgba(0,0,0,0.5)',
+          }}>
+
+            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+              <h2 style={{ fontFamily: "'Crimson Pro', serif", fontSize: '2.2rem', margin: 0, color: theme.accent }}>
+                Editar Obra
+              </h2>
+              <p style={{ fontSize: '0.85rem', color: theme.textMuted, marginTop: '10px' }}>
+                Modificá los detalles de <strong style={{ color: theme.textMain }}>{book?.title}</strong>
+              </p>
+            </div>
+
+            <form onSubmit={handleUpdateBook}>
+
+              <label style={modalLabelStyle(theme)}>TÍTULO DE LA OBRA</label>
+              <input
+                placeholder="Ej: La Leyenda del Norte"
+                value={editData.title}
+                onChange={e => setEditData({ ...editData, title: e.target.value })}
+                style={modalInputStyle(theme, darkMode)}
+                required
+              />
+
+              <label style={modalLabelStyle(theme)}>SINOPSIS / DESCRIPCIÓN</label>
+              <textarea
+                placeholder="Escribe una breve sinopsis para atraer a tus lectores..."
+                value={editData.description}
+                onChange={e => setEditData({ ...editData, description: e.target.value })}
+                style={{ ...modalInputStyle(theme, darkMode), height: '120px', resize: 'none', fontFamily: 'inherit' }}
+                required
+              />
+
+              <label style={modalLabelStyle(theme)}>GÉNEROS Y ETIQUETAS</label>
+              <input
+                placeholder="Terror, Suspenso, Cyberpunk..."
+                value={editData.tags}
+                onChange={e => setEditData({ ...editData, tags: e.target.value })}
+                style={modalInputStyle(theme, darkMode)}
+              />
+              <div style={{ marginBottom: '30px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {suggestedGenres.map(genre => {
+                  const isSelected = selectedTags.includes(genre);
+                  return (
+                    <button
+                      key={genre}
+                      type="button"
+                      onClick={() => handleGenreClick(genre)}
+                      style={{
+                        padding: '6px 14px', borderRadius: '20px',
+                        border: `1px solid ${isSelected ? theme.accent : theme.border}`,
+                        backgroundColor: isSelected ? `${theme.accent}20` : 'transparent',
+                        color: isSelected ? theme.accent : theme.textMuted,
+                        fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600, transition: '0.2s',
+                      }}
+                    >
+                      {isSelected ? '✓ ' : '+ '}{genre}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                <label style={{ ...modalLabelStyle(theme), display: 'block', textAlign: 'center' }}>
+                  PORTADA
+                </label>
+                <div style={{
+                  width: '150px', aspectRatio: '2/3',
+                  backgroundColor: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)',
+                  borderRadius: '12px', border: `1px solid ${theme.border}`,
+                  margin: '15px auto', overflow: 'hidden',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+                }}>
+                  <img
+                    src={coverPreviewSrc}
+                    alt="Preview"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={e => { e.target.src = `${API_BASE}/static/covers/default_cover.jpeg`; }}
+                  />
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setNewCover(e.target.files[0])}
+                  style={{ fontSize: '0.8rem', color: theme.textMuted, cursor: 'pointer' }}
+                />
+                <p style={{ fontSize: '0.72rem', color: theme.textMuted, marginTop: '6px' }}>
+                  Dejá vacío para mantener la portada actual
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '15px' }}>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1, padding: '16px', borderRadius: '50px', border: 'none',
+                    backgroundColor: theme.accent,
+                    color: darkMode ? '#000' : '#fff',
+                    fontWeight: 800, fontSize: '1rem', cursor: 'pointer', transition: '0.3s',
+                  }}
+                >
+                  Guardar Cambios
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowEditModal(false); setNewCover(null); }}
+                  style={{
+                    flex: 1, padding: '16px', borderRadius: '50px',
+                    border: `1px solid ${theme.border}`,
+                    backgroundColor: 'transparent', color: theme.textMain,
+                    fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══ MODAL: ELIMINAR OBRA — también JSX inline por el mismo motivo ══ */}
+      {showDeleteBookModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(8px)' }}>
+          <div style={{ padding: '40px', borderRadius: '25px', width: '100%', maxWidth: '500px', backgroundColor: darkMode ? '#0f1117' : '#fcfaf7', border: `1px solid ${theme.danger}44`, color: theme.textMain, textAlign: 'center' }}>
+
+            <div style={{ fontSize: '3rem', marginBottom: '20px' }}>⚠️</div>
+            <h2 style={{ fontFamily: "'Crimson Pro', serif", color: theme.danger, marginTop: 0, fontSize: '1.8rem' }}>
+              Eliminar "{book?.title}"
+            </h2>
+            <p style={{ color: theme.textMuted, lineHeight: '1.6', marginBottom: '10px' }}>
+              Esta acción es <strong style={{ color: theme.textMain }}>permanente e irreversible</strong>.
+            </p>
+            <p style={{ color: theme.textMuted, fontSize: '0.9rem', marginBottom: '30px' }}>
+              Se eliminarán <strong style={{ color: theme.textMain }}>{chapters.length} capítulos</strong>, todas las calificaciones, comentarios y registros de biblioteca de esta obra.
+            </p>
+
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <button
+                onClick={!deleteDisabled ? handleDeleteBook : undefined}
+                disabled={deleteDisabled}
+                style={{
+                  flex: 1, padding: '14px', borderRadius: '50px', border: 'none',
+                  backgroundColor: deleteLocked ? `${theme.danger}40` : theme.danger,
+                  color: deleteLocked ? `${theme.danger}99` : '#fff',
+                  fontWeight: 700, fontSize: '0.9rem',
+                  cursor: deleteDisabled ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.4s ease',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                }}
+              >
+                {deleteLocked && (
+                  <svg width="40" height="40" viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+                    <circle cx="20" cy="20" r={ringRadius} fill="none" stroke={`${theme.danger}30`} strokeWidth="3" />
+                    <circle
+                      cx="20" cy="20" r={ringRadius}
+                      fill="none" stroke={theme.danger} strokeWidth="3" strokeLinecap="round"
+                      strokeDasharray={ringCircumference}
+                      strokeDashoffset={ringDashOffset}
+                      transform="rotate(-90 20 20)"
+                      style={{ transition: 'stroke-dashoffset 1s linear' }}
+                    />
+                    <text x="20" y="25" textAnchor="middle" fontSize="13" fontWeight="700" fill={theme.danger}>
+                      {deleteCountdown}
+                    </text>
+                  </svg>
+                )}
+                <span>
+                  {deletingBook ? 'Eliminando...' : deleteLocked ? 'Esperá para confirmar' : 'Sí, eliminar para siempre'}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setShowDeleteBookModal(false)}
+                disabled={deletingBook}
+                style={{ flex: 1, padding: '14px', borderRadius: '50px', border: `1px solid ${theme.border}`, backgroundColor: 'transparent', color: theme.textMain, cursor: deletingBook ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+              >
+                Cancelar
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
 
@@ -626,10 +761,15 @@ const AuthorBookDetails = ({ user, darkMode }) => {
 };
 
 // ─── ESTILOS AUXILIARES ───────────────────────────────────────────────────────
+// Usados en la tabla y gráficos
 const labelStyle      = (theme) => ({ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '8px', marginTop: '4px', color: theme.textMuted, letterSpacing: '1px' });
 const inputStyleModal = (theme) => ({ width: '100%', padding: '12px', borderRadius: '10px', marginBottom: '20px', backgroundColor: theme.input, color: theme.textMain, border: `1px solid ${theme.border}`, outline: 'none', boxSizing: 'border-box', fontSize: '0.95rem' });
 const chartCard       = (theme) => ({ padding: '30px', borderRadius: '25px', backgroundColor: theme.card, border: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column' });
 const chartTitle      = (theme) => ({ marginBottom: '25px', color: theme.textMuted, fontSize: '0.8rem', fontWeight: 800, letterSpacing: '1px' });
 const thStyle         = { padding: '20px 30px', fontSize: '0.7rem', color: '#8a8782', letterSpacing: '1px' };
+
+// Usados en el EditModal — idénticos a PublishBook
+const modalLabelStyle = (theme) => ({ display: 'block', marginBottom: '10px', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '1.5px', color: theme.accent, opacity: 0.8 });
+const modalInputStyle = (theme, darkMode) => ({ width: '100%', padding: '15px', marginBottom: '25px', borderRadius: '12px', backgroundColor: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)', color: theme.textMain, border: `1px solid ${theme.border}`, fontSize: '1rem', outline: 'none', boxSizing: 'border-box' });
 
 export default AuthorBookDetails;

@@ -15,7 +15,26 @@ const AdvancedSearch = ({ darkMode }) => {
 
   const [filters, setFilters] = useState(initialState);
 
-  const tagsDisponibles = ["Terror", "Romance", "Fantasía", "Misterio", "Ciencia Ficción", "Aventura", "Drama"];
+  const tagsDisponibles = [
+  // Géneros principales
+  "Fantasía", "Romance", "Terror", "Misterio", "Ciencia Ficción", "Aventura",
+  "Drama", "Acción", "Comedia", "Thriller",
+
+  // Subgéneros populares en webnovelas
+  "Isekai", "LitRPG", "Magia", "Mazmorra", "Reencarnación", "Regresión",
+  "Sistema", "Cultivación", "Wuxia", "Xianxia",
+
+  // Romance y slice of life
+  "Slice of Life", "Romance Moderno", "BL", "GL", "Harem", "Amor Prohibido",
+
+  // Ambientación
+  "Mundo Apocalíptico", "Distopía", "Steampunk", "Cyberpunk", "Fantasía Oscura",
+  "Alta Fantasía", "Fantasía Urbana", "Histórico", "Medieval",
+
+  // Protagonista y tono
+  "Protagonista Femenina", "Protagonista Masculino", "Anti-héroe",
+  "Slow Burn", "Dark", "Fluffy", "Mature",
+];
 
   const theme = {
     bg: darkMode ? '#0a0b10' : '#f4f0ea', 
