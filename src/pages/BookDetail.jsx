@@ -21,10 +21,10 @@ const timeAgo = (dateStr) => {
 // La fecha del último capítulo es información extra para el lector,
 // pero el estado oficial lo pone el autor.
 const BOOK_STATUS_DISPLAY = {
-  ongoing:   { label: 'En progreso', color: '#4ade80', icon: '✍️', desc: 'El autor está publicando activamente.' },
-  completed: { label: 'Terminada',   color: '#60a5fa', icon: '✅', desc: 'Historia completa.' },
-  paused:    { label: 'En pausa',    color: '#facc15', icon: '⏸️', desc: 'El autor tomó un descanso temporal.' },
-  abandoned: { label: 'Abandonada',  color: '#f87171', icon: '🚫', desc: 'El autor dejó de publicar esta obra.' },
+  ongoing:   { label: 'En progreso', color: '#4ade80', icon: '', desc: 'El autor está publicando activamente.' },
+  completed: { label: 'Terminada',   color: '#60a5fa', icon: '', desc: 'Historia completa.' },
+  paused:    { label: 'En pausa',    color: '#facc15', icon: '', desc: 'El autor tomó un descanso temporal.' },
+  abandoned: { label: 'Abandonada',  color: '#f87171', icon: '', desc: 'El autor dejó de publicar esta obra.' },
 };
 
 // Fallback cuando el autor aún no configuró el estado:
