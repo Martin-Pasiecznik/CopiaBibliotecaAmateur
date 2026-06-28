@@ -190,7 +190,7 @@ const BookDetail = ({ user, darkMode }) => {
 
         <div style={{ flex: 1, minWidth: '320px' }}>
           <h1 style={{ fontSize: '3.5rem', margin: '0 0 10px 0', fontFamily: "'Crimson Pro', serif", fontWeight: 400, letterSpacing: '-1px' }}>{book.title}</h1>
-          <p style={{ color: theme.accent, fontSize: '1.3rem', marginBottom: '20px', fontWeight: 500, fontStyle: 'italic', fontFamily: "'Crimson Pro', serif" }}>por {book.author}</p>
+          <p style={{ color: theme.accent, fontSize: '1.3rem', marginBottom: '20px', fontWeight: 500, fontStyle: 'italic', fontFamily: "'Crimson Pro', serif" }}>Autor: {book.author}</p>
 
           {/* ══ ESTADO + FECHA ══════════════════════════════════════════════ */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', marginBottom: '28px', flexWrap: 'wrap' }}>

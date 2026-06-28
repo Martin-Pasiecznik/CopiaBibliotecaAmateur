@@ -4,6 +4,7 @@ import { API_BASE } from '../App';
 
 const PublishBook = ({ user, darkMode, refreshBooks }) => {
   const [title, setTitle] = useState('');
+  const [authorName, setAuthorName] = useState(user?.name || '');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
   const [cover, setCover] = useState(null);
@@ -38,7 +39,7 @@ const PublishBook = ({ user, darkMode, refreshBooks }) => {
 
   // Protagonista y tono
   "Protagonista Femenina", "Protagonista Masculino", "Anti-héroe",
-  "Slow Burn", "Dark", "Fluffy", "Mature",
+  "Slow Burn", "Dark", "Fluffy", "Mature", "Guerra",
 ];
 
   const handleGenreClick = (genre) => {
@@ -71,7 +72,7 @@ const PublishBook = ({ user, darkMode, refreshBooks }) => {
 
     const formData = new FormData();
     formData.append('title', title);
-    formData.append('author', user.name);
+    formData.append('author', authorName.trim() || user.name);
     formData.append('description', description);
     // author_email ya no se usa: el backend lo toma del token
     formData.append('tags', tags);
@@ -121,12 +122,21 @@ const PublishBook = ({ user, darkMode, refreshBooks }) => {
           <h2 style={{ fontFamily: "'Crimson Pro', serif", fontSize: '2.2rem', margin: 0, color: theme.accent }}>
             Publicar Nueva Historia
           </h2>
-          <p style={{ fontSize: '0.85rem', color: theme.textMuted, marginTop: '10px' }}>
-            Autor: <strong style={{ color: theme.textMain }}>{user?.name || "Invitado"}</strong>
-          </p>
         </header>
 
         <form onSubmit={handleSubmit}>
+          <label style={labelStyle(theme)}>NOMBRE DEL AUTOR</label>
+          <input
+            placeholder="Tu nombre o pseudónimo..."
+            value={authorName}
+            onChange={e => setAuthorName(e.target.value)}
+            style={inputStyle(theme)}
+            required
+          />
+          <p style={{ fontSize: '0.75rem', color: theme.textMuted, marginTop: '-18px', marginBottom: '25px' }}>
+            Por defecto es tu nombre de cuenta, pero podés cambiarlo por un pseudónimo. Así figurará en la obra.
+          </p>
+
           <label style={labelStyle(theme)}>TÍTULO DE LA OBRA</label>
           <input
             placeholder="Ej: La Leyenda del Norte"

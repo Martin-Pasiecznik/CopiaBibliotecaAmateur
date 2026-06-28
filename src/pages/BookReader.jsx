@@ -153,8 +153,8 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
   return (
     <div style={{ position: 'relative', backgroundColor: theme.bg, minHeight: '100vh', transition: '0.3s', fontFamily: "'Inter', sans-serif" }}>
 
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 30px', position: 'sticky', top: '0', height: '70px', backgroundColor: theme.bg, borderBottom: `1px solid ${theme.border}`, zIndex: 1100, boxShadow: darkMode ? '0 4px 10px rgba(0,0,0,0.5)' : '0 4px 10px rgba(0,0,0,0.05)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '25px' }}>
+      <header className="reader-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 30px', position: 'sticky', top: '0', height: '70px', backgroundColor: theme.bg, borderBottom: `1px solid ${theme.border}`, zIndex: 1100, boxShadow: darkMode ? '0 4px 10px rgba(0,0,0,0.5)' : '0 4px 10px rgba(0,0,0,0.05)' }}>
+        <div className="reader-header-left" style={{ display: 'flex', alignItems: 'center', gap: '25px' }}>
           <Link to="/" style={{ color: theme.textMain, textDecoration: 'none', fontWeight: 800, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Crimson Pro', serif", transition: 'color 0.3s' }}
             onMouseOver={(e) => e.currentTarget.style.color = theme.accent}
             onMouseOut={(e) => e.currentTarget.style.color = theme.textMain}
@@ -166,7 +166,7 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
             <button style={btnSmall(darkMode, theme)} onClick={() => setFontSize(f => Math.max(f - 2, 12))}>A<span style={{ fontSize: '0.6rem' }}>-</span></button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+        <div className="reader-header-right" style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
           <button style={{ ...btnSmall(darkMode, theme), border: 'none', fontWeight: 700, letterSpacing: '1px' }} onClick={() => navigate(`/book/${id}`)}>VOLVER AL ÍNDICE</button>
           <button style={{ ...btnSmall(darkMode, theme), borderRadius: '50%', width: '40px', height: '40px', padding: 0 }} onClick={() => setDarkMode(!darkMode)}>
             {darkMode ? '☀️' : '🌙'}
@@ -181,25 +181,35 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
           <div style={{ width: '40px', height: '2px', background: theme.accent, margin: '20px auto' }}></div>
         </div>
 
-        <div style={readerTextStyle}>
+        <div className="reader-article" style={readerTextStyle}>
           {paragraphs.slice(0, midPointPara).map((para, i) => <p key={`p1-${i}`} style={paragraphStyle}>{para}</p>)}
           <div ref={triggerRef} style={{ height: '40px', margin: '20px 0', opacity: 0.1, textAlign: 'center' }}>✦</div>
           {paragraphs.slice(midPointPara).map((para, i) => <p key={`p2-${i}`} style={paragraphStyle}>{para}</p>)}
         </div>
       </main>
 
-      <nav style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '40px', padding: '60px 0', maxWidth: '800px', margin: '0 auto', borderTop: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}` }}>
-        <button style={{ ...navBtnStyle(theme), opacity: currentIndex === 0 ? 0.2 : 1 }} disabled={currentIndex === 0} onClick={() => navigate(`/reader/${id}/${currentIndex - 1}`)}>ANTERIOR</button>
+      <nav className="reader-nav" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '40px', padding: '60px 0', maxWidth: '800px', margin: '0 auto', borderTop: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}` }}>
+        <button className="reader-nav-btn" style={{ ...navBtnStyle(theme), opacity: currentIndex === 0 ? 0.2 : 1 }} disabled={currentIndex === 0} onClick={() => navigate(`/reader/${id}/${currentIndex - 1}`)}>ANTERIOR</button>
         <div style={{ textAlign: 'center' }}>
           <span style={{ fontWeight: 800, color: theme.textMain, fontSize: '1rem', display: 'block' }}>{currentIndex + 1} / {chapters.length}</span>
           <span style={{ fontSize: '0.6rem', color: theme.accent, fontWeight: 800, letterSpacing: '1px' }}>CAPÍTULO</span>
+          <button
+            onClick={() => navigate(`/book/${id}`)}
+            style={{
+              display: 'block', margin: '10px auto 0', background: 'none', border: 'none',
+              color: theme.textMuted, fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.5px',
+              cursor: 'pointer',
+            }}
+          >
+            VOLVER AL ÍNDICE
+          </button>
         </div>
-        <button style={{ ...navBtnStyle(theme), opacity: currentIndex === chapters.length - 1 ? 0.2 : 1 }} disabled={currentIndex === chapters.length - 1} onClick={() => navigate(`/reader/${id}/${currentIndex + 1}`)}>SIGUIENTE</button>
+        <button className="reader-nav-btn" style={{ ...navBtnStyle(theme), opacity: currentIndex === chapters.length - 1 ? 0.2 : 1 }} disabled={currentIndex === chapters.length - 1} onClick={() => navigate(`/reader/${id}/${currentIndex + 1}`)}>SIGUIENTE</button>
       </nav>
 
-      <section style={{ maxWidth: '800px', margin: '60px auto', padding: '0 30px' }}>
+      <section className="reader-comments-section" style={{ maxWidth: '800px', margin: '60px auto', padding: '0 30px' }}>
         <h3 style={{ color: theme.textMain, fontFamily: "'Crimson Pro', serif", fontSize: '1.8rem', paddingBottom: '20px', marginBottom: '40px' }}>
-          Notas de los lectores ({comments.length})
+          Comentarios de los lectores ({comments.length})
         </h3>
 
         {user ? (
@@ -212,7 +222,7 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
             />
             <div style={{ textAlign: 'right', marginTop: '15px' }}>
               <button type="submit" disabled={isSubmitting} style={{ padding: '12px 35px', borderRadius: '50px', backgroundColor: theme.accent, color: darkMode ? '#000' : '#fff', border: 'none', cursor: 'pointer', fontWeight: 800, fontSize: '0.8rem', opacity: isSubmitting ? 0.6 : 1 }}>
-                {isSubmitting ? "ENVIANDO..." : "PUBLICAR NOTA"}
+                {isSubmitting ? "ENVIANDO..." : "COMENTAR"}
               </button>
             </div>
           </form>
@@ -245,7 +255,43 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
         </div>
       </section>
 
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700;800&display=swap');`}</style>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700;800&display=swap');
+
+        /* ── Responsividad — solo disposición (padding, gaps, wrap), sin tocar fuentes ni colores ── */
+        @media (max-width: 640px) {
+          .reader-header {
+            flex-wrap: wrap !important;
+            height: auto !important;
+            min-height: 70px;
+            padding: 12px 16px !important;
+            row-gap: 10px;
+            justify-content: center !important;
+          }
+          .reader-header-left,
+          .reader-header-right {
+            justify-content: center !important;
+            flex-wrap: wrap;
+          }
+          .reader-nav {
+            gap: 14px !important;
+            padding: 30px 16px !important;
+            flex-wrap: wrap !important;
+          }
+          .reader-nav-btn {
+            padding: 10px 22px !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .reader-article {
+            padding: 0 16px !important;
+          }
+          .reader-comments-section {
+            padding: 0 16px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };
