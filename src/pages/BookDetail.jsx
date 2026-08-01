@@ -262,8 +262,8 @@ const BookDetail = ({ user, darkMode }) => {
                 <button onClick={() => updateLibrary('remove')} style={{ padding: '0 15px', background: 'transparent', border: 'none', color: theme.error, cursor: 'pointer', fontSize: '1.1rem' }} title="Quitar">✕</button>
               )}
             </div>
+            
           </div>
-
           <p style={{ lineHeight: '1.8', fontSize: '1.1rem', color: theme.textMuted, marginBottom: '24px', maxWidth: '600px' }}>{book.description}</p>
 
 

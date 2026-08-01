@@ -261,6 +261,7 @@ function App() {
   const [recentlyUpdated, setRecentlyUpdated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // menú hamburguesa en pantallas chicas
 
   // ─────────────────────────────────────────────
   // CAMBIO 4: Al leer el usuario de localStorage, verificar que tenga
@@ -300,6 +301,11 @@ function App() {
   useEffect(() => {
     document.body.style.backgroundColor = theme.bg;
   }, [theme.bg]);
+
+  // Cerrar el menú móvil cada vez que cambia la ruta
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const refreshBooks = useCallback(() => {
     setLoading(true);
@@ -415,7 +421,7 @@ function App() {
       }}>
         {!isReaderRoute && (
           <div style={{ position: "sticky", top: "20px", zIndex: 1000, padding: "0 20px" }}>
-            <nav style={{
+            <nav className="main-nav" style={{
               maxWidth: "1000px", margin: "0 auto",
               backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
               backgroundColor: theme.navBg, border: `1px solid ${theme.border}`,
@@ -431,7 +437,8 @@ function App() {
                 }}>
                   <span style={{ color: theme.accent }}>✦</span> Libreria Amateur
                 </Link>
-                <div style={{ display: "flex", gap: "20px" }}>
+                {/* Links de navegación — se ocultan en móvil (pasan al menú hamburguesa) */}
+                <div className="nav-links-desktop" style={{ display: "flex", gap: "20px" }}>
                   <Link to="/rankings" style={{ color: theme.textMain, textDecoration: "none", fontSize: "0.85rem", fontWeight: 600, opacity: 0.7 }}>
                     Rankings
                   </Link>
@@ -452,13 +459,108 @@ function App() {
               </div>
 
               <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                {/* Zona derecha — login/perfil, se oculta en móvil (pasa al menú) */}
+                <div className="nav-right-desktop" style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                  {!user ? (
+                    <AuthButton onSuccess={handleLoginSuccess} darkMode={darkMode} />
+                  ) : (
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: "12px",
+                      borderRight: `1px solid ${theme.border}`, paddingRight: "15px",
+                    }}>
+                      <img
+                        src={
+                          user.picture?.startsWith("http") || user.picture?.startsWith("data:image")
+                            ? user.picture
+                            : `${API_BASE}/static/avatars_uploaded/${user.picture}`
+                        }
+                        alt="profile"
+                        referrerPolicy="no-referrer"
+                        onClick={() => setShowOnboarding(true)}
+                        style={{
+                          width: "32px", height: "32px", borderRadius: "50%",
+                          objectFit: "cover", cursor: "pointer",
+                          transition: "transform 0.2s ease", display: "block",
+                          border: `2px solid ${theme.accent}50`,
+                        }}
+                        onMouseOver={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+                        onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                      />
+                      <button
+                        onClick={handleLogout}
+                        style={{
+                          background: "none", border: "none", color: theme.textMuted,
+                          cursor: "pointer", fontSize: "0.75rem", fontWeight: 600,
+                        }}
+                      >
+                        Salir
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Toggle de tema — siempre visible */}
+                <button
+                  className="mode-toggle"
+                  onClick={() => setDarkMode(!darkMode)}
+                  style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer" }}
+                >
+                  {darkMode ? "☀️" : "🌙"}
+                </button>
+
+                {/* Botón hamburguesa — solo visible en móvil */}
+                <button
+                  className="nav-hamburger"
+                  onClick={() => setMobileMenuOpen(o => !o)}
+                  aria-label="Abrir menú"
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    display: "none", flexDirection: "column", gap: "5px",
+                    padding: "4px", width: "34px", height: "34px",
+                    justifyContent: "center", alignItems: "center",
+                  }}
+                >
+                  <span style={{ width: "22px", height: "2px", backgroundColor: theme.textMain, borderRadius: "2px", transition: "0.3s", transform: mobileMenuOpen ? "rotate(45deg) translate(5px, 5px)" : "none" }} />
+                  <span style={{ width: "22px", height: "2px", backgroundColor: theme.textMain, borderRadius: "2px", transition: "0.3s", opacity: mobileMenuOpen ? 0 : 1 }} />
+                  <span style={{ width: "22px", height: "2px", backgroundColor: theme.textMain, borderRadius: "2px", transition: "0.3s", transform: mobileMenuOpen ? "rotate(-45deg) translate(5px, -5px)" : "none" }} />
+                </button>
+              </div>
+            </nav>
+
+            {/* PANEL DESPLEGABLE MÓVIL — aparece bajo la barra al tocar la hamburguesa */}
+            {mobileMenuOpen && (
+              <div className="nav-mobile-panel" style={{
+                maxWidth: "1000px", margin: "12px auto 0",
+                backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+                backgroundColor: theme.navBg, border: `1px solid ${theme.border}`,
+                borderRadius: "24px", padding: "20px 25px",
+                boxShadow: theme.shadow,
+                display: "flex", flexDirection: "column", gap: "18px",
+              }}>
+                <Link to="/rankings" style={{ color: theme.textMain, textDecoration: "none", fontSize: "1rem", fontWeight: 600 }}>
+                  Rankings
+                </Link>
+                <Link to="/search" style={{ color: theme.textMain, textDecoration: "none", fontSize: "1rem", fontWeight: 600 }}>
+                  Explorar
+                </Link>
+                {user && (
+                  <>
+                    <Link to="/library" style={{ color: theme.textMain, textDecoration: "none", fontSize: "1rem", fontWeight: 600 }}>
+                      Mi Biblioteca
+                    </Link>
+                    <Link to="/dashboard" style={{ color: theme.textMain, textDecoration: "none", fontSize: "1rem", fontWeight: 600 }}>
+                      Mi Studio
+                    </Link>
+                  </>
+                )}
+
+                <div style={{ height: "1px", backgroundColor: theme.border, margin: "2px 0" }} />
+
+                {/* Login / perfil dentro del menú móvil */}
                 {!user ? (
                   <AuthButton onSuccess={handleLoginSuccess} darkMode={darkMode} />
                 ) : (
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: "12px",
-                    borderRight: `1px solid ${theme.border}`, paddingRight: "15px",
-                  }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                     <img
                       src={
                         user.picture?.startsWith("http") || user.picture?.startsWith("data:image")
@@ -469,34 +571,29 @@ function App() {
                       referrerPolicy="no-referrer"
                       onClick={() => setShowOnboarding(true)}
                       style={{
-                        width: "32px", height: "32px", borderRadius: "50%",
-                        objectFit: "cover", cursor: "pointer",
-                        transition: "transform 0.2s ease", display: "block",
+                        width: "38px", height: "38px", borderRadius: "50%",
+                        objectFit: "cover", cursor: "pointer", display: "block",
                         border: `2px solid ${theme.accent}50`,
                       }}
-                      onMouseOver={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
-                      onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
                     />
+                    <span style={{ flex: 1, color: theme.textMain, fontSize: "0.9rem", fontWeight: 600 }}>
+                      {user.name}
+                    </span>
                     <button
                       onClick={handleLogout}
                       style={{
-                        background: "none", border: "none", color: theme.textMuted,
-                        cursor: "pointer", fontSize: "0.75rem", fontWeight: 600,
+                        background: "none", border: `1px solid ${theme.border}`,
+                        borderRadius: "50px", color: theme.textMuted,
+                        cursor: "pointer", fontSize: "0.8rem", fontWeight: 600,
+                        padding: "8px 18px",
                       }}
                     >
                       Salir
                     </button>
                   </div>
                 )}
-                <button
-                  className="mode-toggle"
-                  onClick={() => setDarkMode(!darkMode)}
-                  style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer" }}
-                >
-                  {darkMode ? "☀️" : "🌙"}
-                </button>
               </div>
-            </nav>
+            )}
           </div>
         )}
 
@@ -520,15 +617,21 @@ function App() {
                     }}>
                       Comunidad Literaria
                     </p>
-                    <h1 style={{ fontSize: "clamp(2.2rem, 6vw, 4.2rem)", fontWeight: 300, color: theme.textMain }}>
+                    <h1 style={{ fontSize: "clamp(2.2rem, 6vw, 4.2rem)", fontWeight: 300, color: theme.textMain, lineHeight: 1.2 }}>
                       El lugar donde{" "}
-                      <span style={{
-                        fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic",
-                        color: theme.accent, fontWeight: 800,
-                      }}>
-                        todo Autor
+                      <span
+                        className="hero-autor"
+                        style={{
+                          fontFamily: "'Marcellus', serif",
+                          fontWeight: 400,
+                          letterSpacing: "0.08em",
+                          borderBottom: `2px solid ${theme.accent}66`,
+                          paddingBottom: "2px",
+                        }}
+                      >
+                        TODO AUTOR
                       </span>{" "}
-                      tiene visibilidad.
+                      <span className="hero-visibilidad">tiene visibilidad.</span>
                     </h1>
                   </header>
 
@@ -643,7 +746,7 @@ function App() {
       </div>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Inter:wght@300;400;600&family=Cormorant+Garamond:ital,wght@1,600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Inter:wght@300;400;600&family=Cormorant+Garamond:ital,wght@1,600&family=Marcellus&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { -webkit-font-smoothing: antialiased; }
         .book-card, .book-card-featured, .recent-item {
@@ -657,6 +760,36 @@ function App() {
         }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: ${theme.border}; border-radius: 10px; }
+
+        /* ── Animación del hero: "TODO AUTOR" vira de blanco a dorado
+              mientras "visibilidad" hace fade-in, ambas al mismo ritmo ── */
+        @keyframes heroAutorColor {
+          from { color: ${darkMode ? "#ffffff" : "#ffffff"}; }
+          to   { color: ${theme.accent}; }
+        }
+        @keyframes heroFadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        .hero-autor {
+          color: ${theme.accent};
+          animation: heroAutorColor 2s ease-out both;
+        }
+        .hero-visibilidad {
+          display: inline-block;
+          animation: heroFadeIn 6s ease-out both;
+        }
+
+        /* ── Responsividad del menú superior ── */
+        /* En desktop: barra completa, hamburguesa oculta.
+           A 630px o menos: los links y la zona derecha se ocultan y
+           aparece la hamburguesa que despliega el panel vertical. */
+        @media (max-width: 630px) {
+          .nav-links-desktop { display: none !important; }
+          .nav-right-desktop { display: none !important; }
+          .nav-hamburger { display: flex !important; }
+          .main-nav { padding: 10px 18px !important; }
+        }
       `}</style>
     </GoogleOAuthProvider>
   );
