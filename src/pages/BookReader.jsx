@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { API_BASE, authHeader } from '../App';
 
 const BookReader = ({ user, darkMode, setDarkMode }) => {
@@ -152,6 +153,12 @@ const BookReader = ({ user, darkMode, setDarkMode }) => {
 
   return (
     <div style={{ position: 'relative', backgroundColor: theme.bg, minHeight: '100vh', transition: '0.3s', fontFamily: "'Inter', sans-serif" }}>
+
+      {/* SEO — el título de la pestaña muestra el capítulo actual */}
+      <Helmet>
+        <title>{`Cap. ${currentIndex + 1}: ${currentChapter.title} — Librería Amateur`}</title>
+        <meta name="description" content={`Leé el capítulo ${currentIndex + 1}: ${currentChapter.title} en Librería Amateur.`} />
+      </Helmet>
 
       <header className="reader-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 30px', position: 'sticky', top: '0', height: '70px', backgroundColor: theme.bg, borderBottom: `1px solid ${theme.border}`, zIndex: 1100, boxShadow: darkMode ? '0 4px 10px rgba(0,0,0,0.5)' : '0 4px 10px rgba(0,0,0,0.05)' }}>
         <div className="reader-header-left" style={{ display: 'flex', alignItems: 'center', gap: '25px' }}>

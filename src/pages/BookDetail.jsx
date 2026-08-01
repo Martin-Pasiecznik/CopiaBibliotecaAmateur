@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { API_BASE, authHeader } from '../App';
 
 // ─── HELPER: tiempo relativo ─────────────────────────────────────────────────
@@ -174,8 +175,25 @@ const BookDetail = ({ user, darkMode }) => {
 
   if (!book) return <div style={{ padding: '100px', textAlign: 'center', color: theme.textMain, fontFamily: 'serif' }}>Cargando obra...</div>;
 
+  // La imagen OG se calcula acá afuera para no meter condicionales
+  // dentro de <Helmet> (react-helmet-async falla con children condicionales)
+  const ogImage = book.author_note && book.author_note !== 'null'
+    ? `${API_BASE}/static/covers/${book.author_note}`
+    : `${API_BASE}/static/covers/default_cover.jpeg`;
+
   return (
     <div style={{ padding: '60px 20px', maxWidth: '1100px', margin: '0 auto', color: theme.textMain, fontFamily: "'Inter', sans-serif" }}>
+
+      {/* SEO dinámico — título y descripción según el libro que se está viendo.
+          La sinopsis se recorta a ~160 caracteres, que es lo que Google muestra. */}
+      <Helmet>
+        <title>{`${book.title} — Librería Amateur`}</title>
+        <meta name="description" content={(book.description || '').slice(0, 160)} />
+        <meta property="og:title" content={`${book.title} — por ${book.author}`} />
+        <meta property="og:description" content={(book.description || '').slice(0, 200)} />
+        <meta property="og:type" content="book" />
+        <meta property="og:image" content={ogImage} />
+      </Helmet>
 
       {/* ── HEADER ── */}
       <div style={{ display: 'flex', gap: '60px', marginBottom: '80px', flexWrap: 'wrap' }}>

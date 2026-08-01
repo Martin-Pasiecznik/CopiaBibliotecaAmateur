@@ -6,6 +6,7 @@ import React, {
 } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { HelmetProvider, Helmet } from "react-helmet-async";
 import { jwtDecode } from "jwt-decode";
 
 // Componentes y Páginas
@@ -402,7 +403,20 @@ function App() {
   };
 
   return (
+    <HelmetProvider>
     <GoogleOAuthProvider clientId="750793668642-7apu45i7te8b8gibnrelnhjgqj7vg512.apps.googleusercontent.com">
+      {/* SEO por defecto — se aplica a cualquier página que no defina el suyo.
+          Las páginas de contenido (BookDetail, BookReader) lo sobrescriben. */}
+      <Helmet>
+        <html lang="es" />
+        <title>Librería Amateur — Novelas por capítulos</title>
+        <meta name="description" content="Comunidad literaria donde todo autor tiene visibilidad. Leé y publicá novelas por capítulos." />
+        <meta property="og:title" content="Librería Amateur" />
+        <meta property="og:description" content="Comunidad literaria donde todo autor tiene visibilidad." />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Helmet>
+
       <ForceScrollToTop />
 
       {showOnboarding && user && (
@@ -773,11 +787,17 @@ function App() {
         }
         .hero-autor {
           color: ${theme.accent};
-          animation: heroAutorColor 2s ease-out both;
+          animation: heroAutorColor 2.5s ease-out both;
         }
         .hero-visibilidad {
           display: inline-block;
-          animation: heroFadeIn 6s ease-out both;
+          animation: heroFadeIn 4s ease-out 0.8s both;
+        }
+
+        ///Bloquea animaciones si usuario las tiene bloqueadas en su configuracion de SO. 
+        @media (prefers-reduced-motion: reduce) {
+        .hero-autor { animation: none; }
+        .hero-visibilidad { animation: none; }
         }
 
         /* ── Responsividad del menú superior ── */
@@ -792,6 +812,7 @@ function App() {
         }
       `}</style>
     </GoogleOAuthProvider>
+    </HelmetProvider>
   );
 }
 
