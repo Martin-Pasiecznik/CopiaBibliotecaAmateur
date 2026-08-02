@@ -25,7 +25,10 @@ import AdvancedSearch from "./pages/AdvancedSearch";
 // CAMBIO 1: URL base centralizada.
 // En producción cambiá solo este valor (o usá una variable de entorno).
 // ─────────────────────────────────────────────
-export const API_BASE = "http://127.0.0.1:5001";
+// #12 — La URL de la API viene de la variable de entorno VITE_API_URL
+// (definida en el archivo .env). Si no existe, usa localhost por defecto.
+// En Vite, las variables deben empezar con "VITE_" para ser accesibles.
+export const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:5001";
 
 // ─────────────────────────────────────────────
 // CAMBIO 2: Helper para construir el header de autenticación.
@@ -404,7 +407,7 @@ function App() {
 
   return (
     <HelmetProvider>
-    <GoogleOAuthProvider clientId="750793668642-7apu45i7te8b8gibnrelnhjgqj7vg512.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "750793668642-7apu45i7te8b8gibnrelnhjgqj7vg512.apps.googleusercontent.com"}>
       {/* SEO por defecto — se aplica a cualquier página que no defina el suyo.
           Las páginas de contenido (BookDetail, BookReader) lo sobrescriben. */}
       <Helmet>

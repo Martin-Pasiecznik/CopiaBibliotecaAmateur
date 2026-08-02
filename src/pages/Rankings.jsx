@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { API_BASE } from '../App';
 
 const Rankings = ({ darkMode }) => {
   const [topBooks, setTopBooks] = useState([]);
@@ -51,7 +52,7 @@ const Rankings = ({ darkMode }) => {
   };
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:5001/api/rankings/top100${filter ? `?tag=${filter}` : ''}`)
+    fetch(`${API_BASE}/api/rankings/top100${filter ? `?tag=${filter}` : ''}`)
       .then(r => r.json())
       .then(setTopBooks);
   }, [filter]);
@@ -205,7 +206,7 @@ const Rankings = ({ darkMode }) => {
               </span>
 
               <img 
-                src={`http://127.0.0.1:5001/static/covers/${book.author_note}`} 
+                src={`${API_BASE}/static/covers/${book.author_note}`} 
                 style={{ width: '65px', height: '95px', objectFit: 'cover', borderRadius: '10px', marginRight: '20px', boxShadow: '0 5px 15px rgba(0,0,0,0.2)' }} 
                 alt={book.title}
                 onError={(e) => { e.target.src = "https://placehold.jp/24/333333/ffffff/65x95.png?text=No+Img" }}
