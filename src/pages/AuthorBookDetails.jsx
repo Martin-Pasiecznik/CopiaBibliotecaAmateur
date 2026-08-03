@@ -462,7 +462,7 @@ const AuthorBookDetails = ({ user, darkMode }) => {
                   </svg>
                 )}
                 <span>
-                  {deletingBook ? 'Eliminando...' : deleteLocked ? 'Esperá para confirmar' : 'Sí, eliminar para siempre'}
+                  {deletingBook ? 'Eliminando...' : deleteLocked ? 'Espera para confirmar' : 'Sí, eliminar para siempre'}
                 </span>
               </button>
 
