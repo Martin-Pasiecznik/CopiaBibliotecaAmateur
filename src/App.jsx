@@ -260,7 +260,6 @@ function App() {
   const isReaderRoute = location.pathname.startsWith("/reader");
 
   const [darkMode, setDarkMode] = useState(true);
-  const [books, setBooks] = useState([]);
   const [featuredBooks, setFeaturedBooks] = useState([]);
   const [recentlyUpdated, setRecentlyUpdated] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -313,13 +312,13 @@ function App() {
 
   const refreshBooks = useCallback(() => {
     setLoading(true);
-    // Estos endpoints son públicos, no necesitan token
+    // La home solo muestra Destacados y Recientes.
+    // Ya no traemos /api/books (todos los libros) porque no se renderiza
+    // en ningún lado — era una carga innecesaria que crecería con el catálogo.
     Promise.all([
-      fetch(`${API_BASE}/api/books`).then((r) => r.json()).catch(() => []),
       fetch(`${API_BASE}/api/books/featured-random`).then((r) => r.json()).catch(() => []),
       fetch(`${API_BASE}/api/books/recently-updated`).then((r) => r.json()).catch(() => []),
-    ]).then(([all, feat, recent]) => {
-      setBooks(all);
+    ]).then(([feat, recent]) => {
       setFeaturedBooks(feat);
       setRecentlyUpdated(recent);
       setLoading(false);

@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE } from '../App';
 
 const AdvancedSearch = ({ darkMode }) => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // #8 — Estado de scroll infinito
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef(null);      // elemento "centinela" al final de la lista
+  const PER_PAGE = 20;
   
   // Estado inicial para poder resetear fácilmente
   const initialState = {
@@ -80,31 +87,73 @@ const AdvancedSearch = ({ darkMode }) => {
     }))
     .filter(group => group.tags.length > 0);
 
+  // Arma los query params comunes a partir de los filtros actuales
+  const buildParams = (pageNum) => new URLSearchParams({
+    q: filters.q,
+    tags: filters.tags.join(','),
+    min_rating: filters.minRating,
+    sort: filters.sort,
+    page: pageNum,
+    per_page: PER_PAGE,
+  });
+
+  // #8 — Cuando cambian los filtros: resetear a página 1 y recargar desde cero.
+  // Se mantiene el debounce de 400ms para no disparar en cada tecla.
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      fetchResults();
+    const delay = setTimeout(() => {
+      fetchFirstPage();
     }, 400);
-    return () => clearTimeout(delayDebounceFn);
+    return () => clearTimeout(delay);
   }, [filters]);
 
-  const fetchResults = async () => {
+  // Primera página (reemplaza los resultados)
+  const fetchFirstPage = async () => {
     setLoading(true);
-    const params = new URLSearchParams({
-      q: filters.q,
-      tags: filters.tags.join(','),
-      min_rating: filters.minRating,
-      sort: filters.sort
-    });
-    
+    setPage(1);
     try {
-      const res = await fetch(`${API_BASE}/api/search/advanced?${params}`);
+      const res = await fetch(`${API_BASE}/api/search/advanced?${buildParams(1)}`);
       const data = await res.json();
-      setResults(data);
+      // El backend paginado devuelve { books, has_more }
+      const books = data.books || [];
+      setResults(books);
+      setHasMore(data.has_more ?? false);
     } catch (error) {
       console.error("Error buscando:", error);
+      setResults([]);
+      setHasMore(false);
     }
     setLoading(false);
   };
+
+  // Páginas siguientes (acumula al final)
+  const fetchNextPage = useCallback(async () => {
+    if (loadingMore || !hasMore || loading) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const res = await fetch(`${API_BASE}/api/search/advanced?${buildParams(nextPage)}`);
+      const data = await res.json();
+      const books = data.books || [];
+      setResults(prev => [...prev, ...books]);
+      setHasMore(data.has_more ?? false);
+      setPage(nextPage);
+    } catch (error) {
+      console.error("Error cargando más:", error);
+      setHasMore(false);
+    }
+    setLoadingMore(false);
+  }, [page, hasMore, loadingMore, loading, filters]);
+
+  // #8 — Observer: cuando el centinela entra en pantalla, carga más.
+  // Mismo patrón que usás en BookReader para contar vistas.
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) fetchNextPage();
+    }, { rootMargin: '200px' }); // carga un poco antes de llegar al fondo
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasMore]);
 
   const toggleTag = (tag) => {
     setFilters(prev => ({
@@ -346,6 +395,22 @@ const AdvancedSearch = ({ darkMode }) => {
             <p style={{ fontSize: '3rem', color: theme.accent, opacity: 0.5, margin: '0 0 15px 0' }}>✧</p>
             <h3 style={{ fontFamily: "'Crimson Pro', serif", fontSize: '1.5rem', fontWeight: 400, color: theme.textMain, margin: '0 0 10px 0' }}>El estante está vacío</h3>
           </div>
+        )}
+
+        {/* #8 — Centinela invisible: cuando entra en pantalla, se cargan más libros */}
+        {hasMore && results.length > 0 && (
+          <div ref={sentinelRef} style={{ height: '60px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '30px' }}>
+            {loadingMore && (
+              <span style={{ color: theme.accent, fontSize: '1.5rem', animation: 'pulse 1.5s infinite' }}>✦</span>
+            )}
+          </div>
+        )}
+
+        {/* Mensaje de fin cuando ya no quedan más resultados */}
+        {!hasMore && results.length > 0 && (
+          <p style={{ textAlign: 'center', marginTop: '40px', color: theme.textMuted, fontSize: '0.85rem', fontStyle: 'italic' }}>
+            Has llegado al final del catálogo.
+          </p>
         )}
       </main>
 

@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE } from '../App';
 
 const Rankings = ({ darkMode }) => {
   const [topBooks, setTopBooks] = useState([]);
   const [filter, setFilter] = useState("");
+
+  // #8 — Estado de scroll infinito
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef(null);
+  const PER_PAGE = 20;
 
   // Géneros principales — siempre visibles como pills en la fila de arriba
   const mainGenres = ["Fantasía", "Romance", "Terror", "Ciencia Ficción", "Drama"];
@@ -51,11 +58,58 @@ const Rankings = ({ darkMode }) => {
     star: darkMode ? '#d4af37' : '#b85b3f'
   };
 
+  // #8 — Al cambiar el filtro: reiniciar a página 1 y recargar desde cero
   useEffect(() => {
-    fetch(`${API_BASE}/api/rankings/top100${filter ? `?tag=${filter}` : ''}`)
-      .then(r => r.json())
-      .then(setTopBooks);
+    fetchFirstPage();
   }, [filter]);
+
+  const buildUrl = (pageNum) => {
+    const params = new URLSearchParams({ page: pageNum, per_page: PER_PAGE });
+    if (filter) params.set('tag', filter);
+    return `${API_BASE}/api/rankings/top100?${params}`;
+  };
+
+  const fetchFirstPage = async () => {
+    setPage(1);
+    try {
+      const res = await fetch(buildUrl(1));
+      const data = await res.json();
+      const books = data.books || [];
+      setTopBooks(books);
+      setHasMore(data.has_more ?? false);
+    } catch (err) {
+      console.error("Error cargando rankings:", err);
+      setTopBooks([]);
+      setHasMore(false);
+    }
+  };
+
+  const fetchNextPage = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const res = await fetch(buildUrl(nextPage));
+      const data = await res.json();
+      const books = data.books || [];
+      setTopBooks(prev => [...prev, ...books]);
+      setHasMore(data.has_more ?? false);
+      setPage(nextPage);
+    } catch (err) {
+      console.error("Error cargando más:", err);
+      setHasMore(false);
+    }
+    setLoadingMore(false);
+  }, [page, hasMore, loadingMore, filter]);
+
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) fetchNextPage();
+    }, { rootMargin: '200px' });
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasMore]);
 
   const getRankColor = (index) => {
     if (index === 0) return theme.gold;
@@ -241,7 +295,24 @@ const Rankings = ({ darkMode }) => {
             </div>
           </Link>
         ))}
+
+        {/* #8 — Centinela de scroll infinito */}
+        {hasMore && topBooks.length > 0 && (
+          <div ref={sentinelRef} style={{ height: '50px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            {loadingMore && (
+              <span style={{ color: theme.accent, fontSize: '1.5rem', animation: 'pulse 1.5s infinite' }}>✦</span>
+            )}
+          </div>
+        )}
+
+        {!hasMore && topBooks.length > 0 && (
+          <p style={{ textAlign: 'center', marginTop: '30px', color: theme.textMuted, fontSize: '0.85rem', fontStyle: 'italic' }}>
+            Fin del ranking.
+          </p>
+        )}
       </div>
+
+      <style>{`@keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }`}</style>
     </div>
   );
 };
